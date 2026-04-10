@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard &mdash; FoodSave</title>
+<meta name="description" content="FoodSave dashboard to track food prepared, consumed, waste and donations in real time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="db.js"></script>
+<script src="settings-sync.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --accent:       #1D9E75;
+    --accent-dark:  #0F6E56;
+    --danger:       #E24B4A;
+    --info:         #185FA5;
+    --warning:      #BA7517;
+    --bg:           #F4F6F5;
+    --surface:      #FFFFFF;
+    --border:       #E2E8E5;
+    --text-primary: #1A2922;
+    --text-secondary:#4A635A;
+    --text-muted:   #7F9D93;
+    --sidebar-bg:   #0F2D22;
+    --sidebar-text: #A8C5B5;
+    --sidebar-active:#1D9E75;
+    --radius-sm:    6px;
+    --radius-md:    10px;
+    --radius-lg:    14px;
+    --shadow-sm:    0 1px 3px rgba(0,0,0,.06);
+    --shadow-md:    0 4px 16px rgba(0,0,0,.08);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    display: flex;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 100;
+    transition: transform .25s ease;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 22px 18px 18px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+
+  .logo-icon {
+    width: 34px; height: 34px;
+    background: var(--accent);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-icon svg { width: 18px; height: 18px; }
+  .logo-text { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+
+  .nav { flex: 1; padding: 14px 0; overflow-y: auto; }
+
+  .nav-section {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.3);
+    padding: 14px 18px 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 18px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+    border-radius: 0;
+    transition: background .15s, color .15s;
+    position: relative;
+  }
+
+  .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+
+  .nav-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+
+  .nav-item.active {
+    background: rgba(29,158,117,.18);
+    color: #fff;
+  }
+
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .sidebar-bottom {
+    padding: 14px 18px;
+    border-top: 1px solid rgba(255,255,255,.07);
+  }
+
+  .user-row { display: flex; align-items: center; gap: 10px; }
+
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .user-name { font-size: 12.5px; font-weight: 600; color: #fff; }
+  .user-role { font-size: 11px; color: var(--sidebar-text); margin-top: 1px; }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: 220px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    position: sticky; top: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 50;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .topbar-title { flex: 1; }
+  .topbar-title h1 { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+  .topbar-title p { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+
+  .search-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    gap: 7px;
+    width: 200px;
+  }
+
+  .search-wrap svg { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; }
+  .search-input { border: none; background: none; outline: none; font-size: 13px; color: var(--text-primary); width: 100%; font-family: inherit; }
+
+  .icon-btn {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .icon-btn svg { width: 17px; height: 17px; }
+  .icon-btn:hover { background: var(--bg); }
+
+  .notif-dot {
+    width: 7px; height: 7px;
+    background: var(--danger);
+    border-radius: 50%;
+    position: absolute;
+    top: 6px; right: 6px;
+    border: 1.5px solid #fff;
+  }
+
+  .btn-primary {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+    transition: background .15s;
+  }
+
+  .btn-primary svg { width: 14px; height: 14px; }
+  .btn-primary:hover { background: var(--accent-dark); }
+
+  /* ── CONTENT ── */
+  .content { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ── QUICK CARDS ── */
+  .quick-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .quick-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .quick-label { font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+  .quick-value { font-size: 26px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+  .quick-unit  { font-size: 11.5px; color: var(--text-secondary); margin-top: 6px; }
+
+  /* ── STAT CARDS ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 14px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
+
+  .stat-change {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12px; margin-top: 5px;
+  }
+
+  .stat-change svg { width: 13px; height: 13px; }
+  .change-up   { color: #0F6E56; }
+  .change-down { color: var(--danger); }
+
+  .stat-icon {
+    width: 44px; height: 44px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-icon svg { width: 22px; height: 22px; }
+  .ic-green { background: rgba(29,158,117,.1); }
+  .ic-blue  { background: rgba(24,95,165,.1); }
+  .ic-red   { background: rgba(226,75,74,.1); }
+
+  /* ── MIDDLE ROW ── */
+  .middle-row {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; gap: 10px; }
+  .card-title  { font-size: 14px; font-weight: 700; }
+  .card-sub    { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+  .tab-group { display: flex; gap: 4px; }
+
+  .tab {
+    padding: 5px 11px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: none;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s, color .15s;
+  }
+
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tab:hover:not(.active) { background: var(--bg); }
+
+  .chart-legend { display: flex; gap: 14px; margin-bottom: 12px; }
+
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+  .legend-dot  { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ── PERFORMANCE BARS ── */
+  .perf-section { display: flex; flex-direction: column; gap: 12px; }
+  .perf-row { display: flex; flex-direction: column; gap: 5px; }
+  .perf-meta { display: flex; justify-content: space-between; font-size: 12.5px; }
+  .perf-name { color: var(--text-secondary); }
+  .perf-bar-bg { background: #EEF1EF; border-radius: 99px; height: 6px; overflow: hidden; }
+  .perf-bar-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
+
+  /* ── ALERT BOX ── */
+  .alert-box {
+    background: #FEF3E2;
+    border: 1px solid #F5D08A;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+
+  .alert-icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+  .alert-title { font-size: 13px; font-weight: 600; color: #7A4208; margin-bottom: 3px; }
+  .alert-body  { font-size: 12px; color: #854F0B; line-height: 1.5; }
+
+  .btn-full {
+    width: 100%; padding: 10px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+    transition: background .15s;
+    margin-top: auto;
+  }
+
+  .btn-full:hover { background: var(--accent-dark); }
+
+  /* ── DONATION TABLE ── */
+  .bottom-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .table-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-group { display: flex; gap: 6px; }
+
+  .filter-btn {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: none;
+    font-size: 12px; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer; font-family: inherit;
+    transition: all .15s;
+  }
+
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .filter-btn:hover:not(.active) { background: var(--bg); }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  th {
+    padding: 10px 18px;
+    text-align: left;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  td {
+    padding: 13px 18px;
+    font-size: 13px;
+    border-bottom: 1px solid #F5F7F6;
+    color: var(--text-primary);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAFCFB; }
+
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 9px;
+    border-radius: 99px;
+    font-size: 11.5px; font-weight: 600;
+  }
+
+  .badge-green  { background: rgba(29,158,117,.12); color: #0F6E56; }
+  .badge-red    { background: rgba(226,75,74,.10);  color: #B93938; }
+  .badge-yellow { background: rgba(186,117,23,.12); color: #7A4208; }
+
+  .view-link { font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 500; }
+  .view-link:hover { text-decoration: underline; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 200;
+    align-items: center; justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    width: 480px; max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  }
+
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .modal-sub   { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .form-label { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
+
+  .form-input {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--bg);
+    outline: none;
+    transition: border .15s;
+  }
+
+  .form-input:focus { border-color: var(--accent); background: #fff; }
+
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+
+  .btn-cancel {
+    padding: 9px 18px;
+    border: 1px solid var(--border);
+    background: none;
+    border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s;
+  }
+
+  .btn-cancel:hover { background: var(--bg); }
+
+  .btn-submit {
+    padding: 9px 18px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+  }
+
+  .btn-submit:hover { background: #1a3d2e; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #c8d4cf; border-radius: 3px; }
+
+  /* NOTIFICATION PANEL */
+  .notif-panel {
+    display: none;
+    position: absolute;
+    top: 46px;
+    right: 0;
+    width: 300px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 30px rgba(0,0,0,.1);
+    z-index: 50;
+    overflow: hidden;
+  }
+
+  .notif-panel.open { display: block; }
+  .notif-panel-header { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+
+  .notif-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f5f7f6;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .notif-item:last-child { border-bottom: none; }
+
+  .notif-dot-small {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  .notif-text { font-size: 12px; color: var(--text-primary); line-height: 1.5; }
+  .notif-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* HAMBURGER */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .hamburger span {
+    display: block;
+    width: 20px; height: 2px;
+    background: var(--text-primary);
+    border-radius: 2px;
+    transition: all .25s;
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 99;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 1024px) {
+    .middle-row { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-overlay.open { display: block; }
+    .main { margin-left: 0; }
+    .hamburger { display: flex; }
+    .quick-row { grid-template-columns: repeat(2,1fr); }
+    .stats-row { grid-template-columns: 1fr; }
+    .search-wrap { display: none; }
+  }
+
+  @media (max-width: 480px) {
+    .quick-row { grid-template-columns: 1fr; }
+    .content { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="mainSidebar">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/>
+        <circle cx="12" cy="9" r="2.5" fill="#fff" stroke="none"/>
+      </svg>
+    </div>
+    <span class="logo-text">FoodSave</span>
+  </div>
+
+  <div class="nav">
+    <div class="nav-section">Main Menu</div>
+
+    <a href="dashboard.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+        <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+      Dashboard
+    </a>
+
+    <a href="prepared.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M12 2a7 7 0 017 7H5a7 7 0 017-7z"/>
+        <rect x="3" y="9" width="18" height="3" rx="1"/>
+        <path d="M8 12v8M16 12v8M5 20h14"/>
+      </svg>
+      Prepared Food
+    </a>
+
+    <a href="consumed.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+      Consumed Food
+    </a>
+
+    <a href="waste.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14H6L5 6"/>
+        <path d="M10 11v6M14 11v6"/>
+        <path d="M9 6V4h6v2"/>
+      </svg>
+      Waste Food
+    </a>
+
+    <div class="nav-section">Actions</div>
+
+    <a href="donations.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+      </svg>
+      Donations
+    </a>
+
+    <a href="reports.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M18 20V10M12 20V4M6 20v-6"/>
+      </svg>
+      Reports
+    </a>
+
+    <a href="settings.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+      Settings
+    </a>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-row">
+      <div class="avatar" id="sidebarAvatar">RC</div>
+      <div>
+        <div class="user-name" id="sidebarName">Rahul Chauhan</div>
+        <div class="user-role">Canteen Manager</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="topbar-title">
+      <h1>Dashboard</h1>
+      <p>Track food prepared, consumed, waste &amp; donations &mdash; Today, <span id="headerDate"></span></p>
+    </div>
+
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="search-input" placeholder="Search records...">
+    </div>
+
+    <div class="icon-btn" style="position:relative" onclick="toggleNotif()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 01-3.46 0"/>
+      </svg>
+      <div class="notif-dot"></div>
+
+      <div class="notif-panel" id="notifPanel">
+        <div class="notif-panel-header">Notifications (3)</div>
+        <div class="notif-item">
+          <div class="notif-dot-small" style="background:#E24B4A"></div>
+          <div>
+            <div class="notif-text">High surplus alert &mdash; 38 kg rice pending donation</div>
+            <div class="notif-time">10 mins ago</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-dot-small" style="background:#1D9E75"></div>
+          <div>
+            <div class="notif-text">Akshaya Patra confirmed pickup for 61 kg food</div>
+            <div class="notif-time">2 hours ago</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-dot-small" style="background:#BA7517"></div>
+          <div>
+            <div class="notif-text">Seva Food Bank notification pending response</div>
+            <div class="notif-time">Yesterday</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="openModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Add Surplus
+    </button>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- QUICK MINI STATS -->
+    <div class="quick-row">
+      <div class="quick-card">
+        <div class="quick-label">Today prepared</div>
+        <div class="quick-value" id="qPrepared">&mdash; <span style="font-size:14px;font-weight:400;color:var(--text-secondary)">kg</span></div>
+        <div class="quick-unit" id="qPreparedSub">Loading&hellip;</div>
+      </div>
+      <div class="quick-card">
+        <div class="quick-label">Today consumed</div>
+        <div class="quick-value" id="qConsumed">&mdash; <span style="font-size:14px;font-weight:400;color:var(--text-secondary)">kg</span></div>
+        <div class="quick-unit" id="qConsumedSub">Loading&hellip;</div>
+      </div>
+      <div class="quick-card">
+        <div class="quick-label">Today wasted</div>
+        <div class="quick-value" style="color:var(--danger)" id="qWasted">&mdash; <span style="font-size:14px;font-weight:400">kg</span></div>
+        <div class="quick-unit" id="qWastedSub">Loading&hellip;</div>
+      </div>
+      <div class="quick-card">
+        <div class="quick-label">Donated this month</div>
+        <div class="quick-value" style="color:var(--info)" id="qDonated">&mdash; <span style="font-size:14px;font-weight:400">kg</span></div>
+        <div class="quick-unit" id="qDonatedSub">Loading&hellip;</div>
+      </div>
+    </div>
+
+    <!-- STATS CARDS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">Total food prepared</div>
+          <div class="stat-value" id="dStatPrepared">&mdash;</div>
+          <div class="stat-change change-up" id="dStatPreparedSub">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            Loading&hellip;
+          </div>
+        </div>
+        <div class="stat-icon ic-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8">
+            <path d="M12 2a7 7 0 017 7H5a7 7 0 017-7z"/>
+            <rect x="3" y="9" width="18" height="3" rx="1"/>
+            <path d="M8 12v8M16 12v8M5 20h14"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">Total meals consumed</div>
+          <div class="stat-value" id="dStatConsumed">&mdash;</div>
+          <div class="stat-change change-up" id="dStatConsumedSub">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            Loading&hellip;
+          </div>
+        </div>
+        <div class="stat-icon ic-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">Waste reduction rate</div>
+          <div class="stat-value" id="dStatWaste">&mdash;</div>
+          <div class="stat-change change-down" id="dStatWasteSub">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            Loading&hellip;
+          </div>
+        </div>
+        <div class="stat-icon ic-red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#E24B4A" stroke-width="1.8">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+            <path d="M9 6V4h6v2"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE ROW: CHART + PERFORMANCE -->
+    <div class="middle-row">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Surplus &amp; waste trend</div>
+            <div class="card-sub">15% reduction vs last 30 days</div>
+          </div>
+          <div class="tab-group">
+            <button class="tab" onclick="switchTab(this,'day')">Day</button>
+            <button class="tab" onclick="switchTab(this,'week')">Week</button>
+            <button class="tab active" onclick="switchTab(this,'month')">Month</button>
+          </div>
+        </div>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#1D9E75"></span>Prepared</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#185FA5"></span>Consumed</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#E24B4A"></span>Wasted</span>
+        </div>
+        <div style="position:relative;width:100%;height:220px">
+          <canvas id="trendChart" role="img" aria-label="Line chart showing prepared, consumed and wasted food trend over time">Food trend data.</canvas>
+        </div>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column;gap:16px">
+        <div class="card-title">Performance comparison</div>
+        <div class="perf-section">
+          <div class="perf-row">
+            <div class="perf-meta">
+              <span class="perf-name">This month</span>
+              <span style="color:#0F6E56;font-weight:600">+10%</span>
+            </div>
+            <div class="perf-bar-bg"><div class="perf-bar-fill" style="width:78%;background:#1D9E75"></div></div>
+          </div>
+          <div class="perf-row">
+            <div class="perf-meta">
+              <span class="perf-name">Last month</span>
+              <span style="color:var(--text-muted)">baseline</span>
+            </div>
+            <div class="perf-bar-bg"><div class="perf-bar-fill" style="width:62%;background:#B4B2A9"></div></div>
+          </div>
+          <div class="perf-row">
+            <div class="perf-meta">
+              <span class="perf-name">Waste %</span>
+              <span style="color:var(--danger);font-weight:600">22%</span>
+            </div>
+            <div class="perf-bar-bg"><div class="perf-bar-fill" style="width:22%;background:#E24B4A"></div></div>
+          </div>
+          <div class="perf-row">
+            <div class="perf-meta">
+              <span class="perf-name">Donated</span>
+              <span style="color:var(--info);font-weight:600">18%</span>
+            </div>
+            <div class="perf-bar-bg"><div class="perf-bar-fill" style="width:18%;background:#185FA5"></div></div>
+          </div>
+        </div>
+
+        <div class="alert-box" id="surplusAlertBox">
+          <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="#854F0B" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div>
+            <div class="alert-title">Surplus alert</div>
+            <div class="alert-body" id="surplusAlertBody">Loading surplus info&hellip;</div>
+          </div>
+        </div>
+
+        <button class="btn-full" onclick="window.location.href='donations.html'">
+          Notify NGO now &rarr;
+        </button>
+      </div>
+    </div>
+
+    <!-- DONATION ACTIVITY TABLE -->
+    <div class="bottom-row">
+      <div class="table-header">
+        <div>
+          <div class="card-title">Donation activity</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:3px">All NGO pickups this month</div>
+        </div>
+        <div class="filter-group">
+          <button class="filter-btn active" onclick="filterTable('all',this)">All</button>
+          <button class="filter-btn" onclick="filterTable('Complete',this)">Complete</button>
+          <button class="filter-btn" onclick="filterTable('Pending',this)">Pending</button>
+          <button class="filter-btn" onclick="filterTable('Cancelled',this)">Cancelled</button>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Recipient (NGO)</th>
+            <th>Food Items</th>
+            <th>Status</th>
+            <th>Amount (kg)</th>
+            <th>Contact</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="donationTable">
+          <tr><td colspan="7" style="text-align:center;padding:28px;color:#9baaa2">Loading donation records&hellip;</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADD SURPLUS MODAL -->
+<div class="modal-overlay" id="surplusModal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title">Add surplus food</div>
+    <div class="modal-sub">Log food that is available for donation or redistribution</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Food item name</label>
+        <input class="form-input" placeholder="e.g. Rice, Dal, Roti">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-input">
+          <option>Grains &amp; Rice</option>
+          <option>Dal &amp; Pulses</option>
+          <option>Vegetables</option>
+          <option>Bread &amp; Roti</option>
+          <option>Fruits</option>
+          <option>Dairy</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Quantity (kg)</label>
+        <input class="form-input" type="number" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prepared time</label>
+        <input class="form-input" type="time" value="12:00">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notify NGO</label>
+      <select class="form-input">
+        <option>Select NGO to notify</option>
+        <option>Annapurna Shelter</option>
+        <option>Seva Food Bank</option>
+        <option>Community Kitchen</option>
+        <option>Robin Hood Army</option>
+        <option>Akshaya Patra</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <input class="form-input" placeholder="Any special handling instructions...">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-submit" onclick="submitSurplus()">Log surplus &amp; notify</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ===== HAMBURGER ===== */
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const mainSidebar  = document.getElementById('mainSidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+  hamburgerBtn.addEventListener('click', () => {
+    mainSidebar.classList.toggle('open');
+    sidebarOverlay.classList.toggle('open');
+  });
+  sidebarOverlay.addEventListener('click', () => {
+    mainSidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('open');
+  });
+
+  /* ===== CHART DATA ===== */
+  const datasets = {
+    month: {
+      labels: ['Week 1','Week 2','Week 3','Week 4','Week 5'],
+      prepared: [320,380,350,420,410],
+      consumed: [280,340,310,380,360],
+      wasted: [40,60,45,55,50]
+    },
+    week: {
+      labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+      prepared: [68,72,65,80,75,40,30],
+      consumed: [60,64,58,72,66,35,25],
+      wasted: [8,10,7,10,9,5,5]
+    },
+    day: {
+      labels: ['8am','10am','12pm','2pm','4pm','6pm','8pm'],
+      prepared: [10,15,42,38,20,18,8],
+      consumed: [8,12,38,34,17,15,6],
+      wasted: [2,3,5,4,3,3,2]
+    }
+  };
+
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: datasets.month.labels,
+      datasets: [
+        {
+          label: 'Prepared',
+          data: datasets.month.prepared,
+          borderColor: '#1D9E75',
+          backgroundColor: 'rgba(29,158,117,.08)',
+          tension: .4,
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#1D9E75',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5
+        },
+        {
+          label: 'Consumed',
+          data: datasets.month.consumed,
+          borderColor: '#185FA5',
+          backgroundColor: 'rgba(24,95,165,.06)',
+          tension: .4,
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#185FA5',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5
+        },
+        {
+          label: 'Wasted',
+          data: datasets.month.wasted,
+          borderColor: '#E24B4A',
+          backgroundColor: 'rgba(226,75,74,.06)',
+          tension: .4,
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#E24B4A',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(0,0,0,.04)' },
+          ticks: { color: '#6b7c74', font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" } }
+        },
+        y: {
+          grid: { color: 'rgba(0,0,0,.04)' },
+          ticks: { color: '#6b7c74', font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" } },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  function switchTab(el, period) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    const d = datasets[period];
+    chart.data.labels = d.labels;
+    chart.data.datasets[0].data = d.prepared;
+    chart.data.datasets[1].data = d.consumed;
+    chart.data.datasets[2].data = d.wasted;
+    chart.update();
+  }
+
+  /* ===== TABLE FILTER ===== */
+  function filterTable(status, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#donationTable tr').forEach(row => {
+      row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
+    });
+  }
+
+  /* ===== MODAL ===== */
+  function openModal() {
+    document.getElementById('surplusModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('surplusModal').classList.remove('open');
+  }
+
+  function closeModalOutside(e) {
+    if (e.target === document.getElementById('surplusModal')) closeModal();
+  }
+
+  function submitSurplus() {
+    alert('Surplus logged and NGO notified successfully!');
+    closeModal();
+  }
+
+  /* ===== NOTIFICATIONS ===== */
+  function toggleNotif() {
+    document.getElementById('notifPanel').classList.toggle('open');
+  }
+
+  document.addEventListener('click', function(e) {
+    const panel = document.getElementById('notifPanel');
+    const btn = panel.closest('.icon-btn');
+    if (!btn.contains(e.target)) panel.classList.remove('open');
+  });
+
+  /* ===================================================
+     DASHBOARD -- Full FoodDB localStorage integration
+  =================================================== */
+  function initDashboard() {
+    const today = new Date().toISOString().slice(0, 10);
+
+    /* -- helpers -- */
+    const sumF = (arr, key) => arr.reduce((s, r) => s + parseFloat(r[key] || 0), 0);
+    const sumI = (arr, key) => arr.reduce((s, r) => s + parseInt(r[key]  || 0), 0);
+
+    /* -- pull all stores -- */
+    const allPrep  = FoodDB.prepared.getAll();
+    const allCons  = FoodDB.consumed.getAll();
+    const allWaste = FoodDB.waste.getAll();
+    const allDon   = FoodDB.donations.getAll();
+
+    /* -- today's slices -- */
+    const todayPrep  = allPrep.filter(r => r.date === today);
+    const todayCons  = allCons.filter(r => r.date === today);
+    const todayWaste = allWaste.filter(r => r.date === today);
+
+    const tPrep  = sumF(todayPrep,  'qty');
+    const tCons  = sumF(todayCons,  'consumedKg');
+    const tWaste = sumF(todayWaste, 'kg');
+    const tStudents = sumI(todayCons, 'students');
+    const tWastePct = tPrep > 0 ? (tWaste / tPrep * 100).toFixed(1) : 0;
+    const tConsPct  = tPrep > 0 ? Math.round(tCons / tPrep * 100) : 0;
+
+    /* -- month donations -- */
+    const monthStart = today.slice(0, 7);
+    const monthDon   = allDon.filter(r => (r.scheduledDate || r.date || '').startsWith(monthStart));
+    const totalDonKg = sumF(monthDon, 'qty');
+    const donNGOs    = new Set(monthDon.map(r => r.ngo)).size;
+
+    /* ===========================
+       1. QUICK CARDS
+    =========================== */
+    document.getElementById('qPrepared').innerHTML =
+      `${tPrep.toFixed(1)} <span style="font-size:14px;font-weight:400;color:var(--text-secondary)">kg</span>`;
+    document.getElementById('qPreparedSub').textContent =
+      todayPrep.length ? todayPrep.map(r => r.meal || r.category || '').filter(Boolean).join(' + ') || 'All meals'
+                       : 'No entries yet';
+
+    document.getElementById('qConsumed').innerHTML =
+      `${tCons.toFixed(1)} <span style="font-size:14px;font-weight:400;color:var(--text-secondary)">kg</span>`;
+    document.getElementById('qConsumedSub').textContent =
+      tStudents > 0 ? `~${tStudents} students served` : (tConsPct > 0 ? `${tConsPct}% of prepared` : 'No entries yet');
+
+    const wEl = document.getElementById('qWasted');
+    wEl.innerHTML =
+      `${tWaste.toFixed(1)} <span style="font-size:14px;font-weight:400">kg</span>`;
+    document.getElementById('qWastedSub').textContent =
+      tPrep > 0 ? `${tWastePct}% of prepared` : 'No entries yet';
+
+    document.getElementById('qDonated').innerHTML =
+      `${totalDonKg.toFixed(0)} <span style="font-size:14px;font-weight:400">kg</span>`;
+    document.getElementById('qDonatedSub').textContent =
+      donNGOs > 0 ? `To ${donNGOs} NGO partner${donNGOs > 1 ? 's' : ''}` : 'No donations this month';
+
+    /* ===========================
+       2. BIG STAT CARDS
+    =========================== */
+    // Total prepared (all time)
+    const totalPrepAll = sumF(allPrep, 'qty');
+    const monthPrepAll = sumF(allPrep.filter(r => r.date && r.date.startsWith(monthStart)), 'qty')
+                       + sumF(allCons.filter(r => r.date && r.date.startsWith(monthStart)), 'preparedKg');
+    document.getElementById('dStatPrepared').textContent =
+      totalPrepAll > 0 ? totalPrepAll.toFixed(0) + ' kg' : '0 kg';
+    const prepSubEl = document.getElementById('dStatPreparedSub');
+    if (totalPrepAll > 0) {
+      prepSubEl.className = 'stat-change change-up';
+      prepSubEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> ${allPrep.length} entr${allPrep.length!==1?'ies':'y'} logged`;
+    } else {
+      prepSubEl.className = 'stat-change';
+      prepSubEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> No entries yet`;
+      prepSubEl.style.color = 'var(--text-muted)';
+    }
+
+    // Total consumed (all time student count)
+    const totalStudentsAll = sumI(allCons, 'students');
+    const totalConsKg = sumF(allCons, 'consumedKg');
+    document.getElementById('dStatConsumed').textContent =
+      totalStudentsAll > 0 ? totalStudentsAll.toLocaleString() : (totalConsKg > 0 ? totalConsKg.toFixed(0) + ' kg' : '0');
+    const consSubEl = document.getElementById('dStatConsumedSub');
+    if (totalStudentsAll > 0 || totalConsKg > 0) {
+      consSubEl.className = 'stat-change change-up';
+      consSubEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> ${allCons.length} meal${allCons.length!==1?'s':''} logged`;
+    } else {
+      consSubEl.className = 'stat-change';
+      consSubEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> No entries yet`;
+      consSubEl.style.color = 'var(--text-muted)';
+    }
+
+    // Waste reduction rate (all time)
+    const totalPrepKg  = sumF(allPrep,  'qty');
+    const totalWasteKg = sumF(allWaste, 'kg');
+    const wasteRateAll = totalPrepKg > 0 ? Math.round((1 - totalWasteKg / totalPrepKg) * 100) : null;
+    const wasteSubEl = document.getElementById('dStatWasteSub');
+    if (wasteRateAll !== null) {
+      document.getElementById('dStatWaste').textContent = wasteRateAll + '%';
+      const wasteActualPct = totalPrepKg > 0 ? Math.round(totalWasteKg / totalPrepKg * 100) : 0;
+      wasteSubEl.className = 'stat-change ' + (wasteActualPct <= 15 ? 'change-up' : 'change-down');
+      wasteSubEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="${wasteActualPct<=15?'18 15 12 9 6 15':'6 9 12 15 18 9'}"/></svg> ${wasteActualPct}% of food wasted`;
+    } else {
+      document.getElementById('dStatWaste').textContent = '--';
+      wasteSubEl.className = 'stat-change';
+      wasteSubEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg> No entries yet`;
+      wasteSubEl.style.color = 'var(--text-muted)';
+    }
+
+    /* ===========================
+       3. SURPLUS ALERT BOX
+    =========================== */
+    const surplus = Math.max(tPrep - tCons - tWaste, 0);
+    const alertBody = document.getElementById('surplusAlertBody');
+    if (surplus > 0) {
+      document.getElementById('surplusAlertBox').style.display = '';
+      alertBody.textContent = `${surplus.toFixed(1)} kg surplus available today -- consider donating to an NGO partner.`;
+    } else if (tPrep > 0) {
+      document.getElementById('surplusAlertBox').style.display = '';
+      alertBody.textContent = `No surplus today. All prepared food accounted for. Great job!`;
+    } else {
+      document.getElementById('surplusAlertBox').style.display = 'none';
+    }
+
+    /* ===========================
+       4. TREND CHART (7-day real data)
+    =========================== */
+    const labels7 = [], d7Prep = [], d7Cons = [], d7Waste = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      labels7.push(d.toLocaleDateString('en-IN', { weekday: 'short' }));
+      d7Prep.push(sumF(allPrep.filter(r => r.date === ds),  'qty'));
+      d7Cons.push(sumF(allCons.filter(r => r.date === ds),  'consumedKg'));
+      d7Waste.push(sumF(allWaste.filter(r => r.date === ds), 'kg'));
+    }
+    datasets._live7 = { labels: labels7, prepared: d7Prep, consumed: d7Cons, wasted: d7Waste };
+
+    chart.data.labels              = labels7;
+    chart.data.datasets[0].data   = d7Prep;
+    chart.data.datasets[1].data   = d7Cons;
+    chart.data.datasets[2].data   = d7Waste;
+    chart.update();
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const weekTab = [...document.querySelectorAll('.tab')].find(t => t.textContent === 'Week');
+    if (weekTab) weekTab.classList.add('active');
+
+    /* ===========================
+       5. DONATION TABLE
+    =========================== */
+    const tbody = document.getElementById('donationTable');
+    const recentDons = [...allDon].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 8);
+    if (recentDons.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:#9baaa2">No donation records yet. <a href="donations.html" style="color:var(--accent)">Add one &rarr;</a></td></tr>';
+    } else {
+      tbody.innerHTML = recentDons.map(r => {
+        const badgeCls = r.status === 'Complete' ? 'badge-green'
+                       : r.status === 'Cancelled' ? 'badge-red' : 'badge-yellow';
+        const link = r.status === 'Pending'
+          ? `<a class="view-link" href="donations.html">Send alert</a>`
+          : `<a class="view-link" href="donations.html">View</a>`;
+        return `<tr data-status="${r.status || 'Pending'}">
+          <td>${r.scheduledDate || r.date || '--'}</td>
+          <td><strong>${r.ngo || '--'}</strong></td>
+          <td>${r.items || '--'}</td>
+          <td><span class="badge ${badgeCls}">${r.status || 'Pending'}</span></td>
+          <td>${parseFloat(r.qty || 0).toFixed(0)} kg</td>
+          <td style="color:var(--text-secondary);font-size:12px">${r.contact || '--'}</td>
+          <td>${link}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    /* ===========================
+       6. PERFORMANCE BARS
+    =========================== */
+    const perfConsPct  = totalPrepKg > 0 ? Math.min(100, Math.round(sumF(allCons,'consumedKg') / totalPrepKg * 100)) : 0;
+    const perfWastePct = totalPrepKg > 0 ? Math.min(100, Math.round(totalWasteKg / totalPrepKg * 100)) : 0;
+    const perfDonPct   = totalPrepKg > 0 ? Math.min(100, Math.round(totalDonKg / totalPrepKg * 100)) : 0;
+    const bars = document.querySelectorAll('.perf-bar-fill');
+    const spans = document.querySelectorAll('.perf-row .perf-meta span:last-child');
+    if (bars.length >= 3) {
+      bars[0].style.width = perfConsPct + '%';
+      bars[2].style.width = perfWastePct + '%';
+      bars[3] && (bars[3].style.width = perfDonPct + '%');
+    }
+    if (spans.length >= 4) {
+      spans[2].textContent = perfWastePct + '%';
+      spans[3].textContent = perfDonPct + '%';
+    }
+  }
+
+  /* ===== HEADER DATE ===== */
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  /* Run on load */
+  initDashboard();
+</script>
+
+</body>
+</html>

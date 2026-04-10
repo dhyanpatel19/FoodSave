@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — FoodSave</title>
+<meta name="description" content="Manage your FoodSave profile, notifications, appearance, and system preferences for the college food waste management portal.">
+<script src="db.js"></script>
+<link rel="stylesheet" href="mobile.css">
+<script src="settings-sync.js"></script>
+<script src="mobile.js" defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --sidebar-bg:#0d2b22;--accent:#1D9E75;--accent-dark:#0F6E56;--accent-light:#E1F5EE;
+    --page-bg:#f0f4f2;--card-bg:#ffffff;--border:#e5eae7;
+    --text-primary:#0d2b22;--text-secondary:#6b7c74;--text-muted:#9baaa2;
+    --danger:#E24B4A;--danger-light:#FCEBEB;--warning:#BA7517;--warning-light:#FAEEDA;
+    --info:#185FA5;--info-light:#E6F1FB;--font:'Plus Jakarta Sans',sans-serif;
+    --radius-sm:6px;--radius-md:10px;--radius-lg:14px;--sidebar-width:230px;
+  }
+
+  /* ===== DARK MODE VARIABLES ===== */
+  body.dark-mode {
+    --page-bg:#0f1c17;
+    --card-bg:#172b22;
+    --border:#1f3a2e;
+    --text-primary:#e8f0ec;
+    --text-secondary:#7fa894;
+    --text-muted:#4d6b5c;
+    --sidebar-bg:#091811;
+    --accent-light:rgba(29,158,117,.15);
+    --danger-light:rgba(226,75,74,.12);
+    --warning-light:rgba(186,117,23,.12);
+    --info-light:rgba(24,95,165,.12);
+  }
+
+  body{font-family:var(--font);background:var(--page-bg);color:var(--text-primary);display:flex;min-height:100vh;font-size:14px;transition:background .3s,color .3s}
+
+  /* ===== SIDEBAR ===== */
+  .sidebar{width:var(--sidebar-width);min-width:var(--sidebar-width);background:var(--sidebar-bg);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .logo{display:flex;align-items:center;gap:10px;padding:22px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .logo-icon{width:34px;height:34px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo-icon svg{width:18px;height:18px}
+  .logo-text{font-size:15px;font-weight:600;color:#fff;letter-spacing:-.2px}
+  .nav{padding:16px 0;flex:1}
+  .nav-section{font-size:10px;color:rgba(255,255,255,.3);padding:14px 20px 6px;text-transform:uppercase;letter-spacing:.1em;font-weight:500}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;border-left:3px solid transparent;text-decoration:none}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0}
+  .nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9)}
+  .nav-item.active{background:rgba(29,158,117,.15);color:var(--accent);border-left:3px solid var(--accent);font-weight:500}
+  .sidebar-bottom{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+  .user-row{display:flex;align-items:center;gap:10px}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
+  .user-name{font-size:12px;font-weight:600;color:#fff}
+  .user-role{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px}
+
+  /* ===== MAIN ===== */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+
+  /* TOPBAR */
+  .topbar{background:var(--card-bg);border-bottom:1px solid var(--border);padding:0 28px;height:62px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10;transition:background .3s,border-color .3s}
+  .topbar-title{flex:1}
+  .topbar-title h1{font-size:17px;font-weight:600;color:var(--text-primary)}
+  .topbar-title p{font-size:12px;color:var(--text-secondary);margin-top:1px}
+  .icon-btn{width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--card-bg);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s}
+  .icon-btn:hover{background:var(--page-bg)}
+  .icon-btn svg{width:16px;height:16px;color:var(--text-secondary)}
+  .notif-dot{width:7px;height:7px;background:var(--danger);border-radius:50%;position:absolute;top:7px;right:7px;border:1.5px solid var(--card-bg)}
+
+  /* CONTENT */
+  .content{flex:1;padding:28px 32px;display:flex;gap:24px;align-items:flex-start}
+
+  /* ===== SETTINGS SIDEBAR NAV ===== */
+  .settings-nav{width:200px;min-width:200px;display:flex;flex-direction:column;gap:2px;position:sticky;top:90px}
+  .settings-nav-item{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:var(--radius-sm);font-size:13px;color:var(--text-secondary);cursor:pointer;transition:all .15s;border:none;background:transparent;font-family:var(--font);text-align:left;width:100%}
+  .settings-nav-item svg{width:15px;height:15px;flex-shrink:0}
+  .settings-nav-item:hover{background:var(--card-bg);color:var(--text-primary)}
+  .settings-nav-item.active{background:var(--card-bg);color:var(--accent);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .settings-nav-item.active svg{color:var(--accent)}
+
+  /* ===== SETTINGS PANELS ===== */
+  .settings-panels{flex:1;display:flex;flex-direction:column;gap:20px}
+
+  .settings-section{background:var(--card-bg);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden;transition:background .3s,border-color .3s}
+  .section-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  .section-icon{width:34px;height:34px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .section-icon svg{width:16px;height:16px}
+  .section-head-info{}
+  .section-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+  .section-desc{font-size:12px;color:var(--text-secondary);margin-top:1px}
+
+  /* SETTING ROW */
+  .setting-row{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border)}
+  .setting-row:last-child{border-bottom:none}
+  .setting-label{font-size:13px;font-weight:500;color:var(--text-primary)}
+  .setting-hint{font-size:11px;color:var(--text-muted);margin-top:2px}
+  .setting-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+
+  /* TOGGLE SWITCH */
+  .toggle{position:relative;display:inline-flex;width:40px;height:22px;cursor:pointer;flex-shrink:0}
+  .toggle input{opacity:0;width:0;height:0;position:absolute}
+  .toggle-track{width:40px;height:22px;background:#d1dad6;border-radius:11px;transition:background .2s}
+  .toggle input:checked ~ .toggle-track{background:var(--accent)}
+  .toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .toggle input:checked ~ .toggle-thumb{left:21px}
+
+  /* FORM INPUTS */
+  .form-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);color:var(--text-primary);background:var(--card-bg);outline:none;transition:border .15s}
+  .form-input:focus{border-color:var(--accent)}
+  .form-select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);color:var(--text-primary);background:var(--card-bg);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7c74' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:14px;padding-right:32px}
+
+  /* AVATAR UPLOAD */
+  .avatar-upload{display:flex;align-items:center;gap:16px;padding:20px 22px;border-bottom:1px solid var(--border)}
+  .avatar-large{width:64px;height:64px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;color:#fff;flex-shrink:0;position:relative;cursor:pointer;overflow:hidden}
+  .avatar-large img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+  .avatar-overlay{position:absolute;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;border-radius:50%}
+  .avatar-large:hover .avatar-overlay{opacity:1}
+  .avatar-overlay svg{width:18px;height:18px;color:#fff}
+  .avatar-info{}
+  .avatar-name{font-size:15px;font-weight:600;color:var(--text-primary)}
+  .avatar-role-badge{display:inline-flex;align-items:center;gap:5px;background:var(--accent-light);color:var(--accent-dark);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;margin-top:4px}
+  .avatar-role-badge svg{width:11px;height:11px}
+  .avatar-hint{font-size:11px;color:var(--text-muted);margin-top:5px}
+
+  /* TWO COL FORM */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 22px}
+  .form-grid.single-col{grid-template-columns:1fr}
+  .form-group{display:flex;flex-direction:column;gap:5px}
+  .form-label{font-size:12px;font-weight:500;color:var(--text-secondary)}
+
+  /* BTN */
+  .btn-primary{display:inline-flex;align-items:center;gap:6px;background:var(--sidebar-bg);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px 18px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;transition:background .15s}
+  .btn-primary:hover{background:#1a3d2e}
+  .btn-primary svg{width:14px;height:14px}
+  .btn-outline{display:inline-flex;align-items:center;gap:6px;background:var(--card-bg);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 16px;font-size:13px;font-family:var(--font);cursor:pointer;transition:all .15s}
+  .btn-outline:hover{background:var(--page-bg);color:var(--text-primary)}
+  .btn-danger{display:inline-flex;align-items:center;gap:6px;background:var(--danger-light);color:var(--danger);border:1px solid rgba(226,75,74,.25);border-radius:var(--radius-sm);padding:9px 16px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;transition:all .15s}
+  .btn-danger:hover{background:#FCDADA}
+  .btn-actions{display:flex;gap:10px;padding:16px 22px;border-top:1px solid var(--border);justify-content:flex-end}
+
+  /* COLOR SWATCHES (theme picker) */
+  .theme-swatches{display:flex;gap:10px;flex-wrap:wrap}
+  .swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;transition:all .15s;position:relative}
+  .swatch.selected::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid currentColor}
+  .swatch[data-color="#1D9E75"]{background:#1D9E75;color:#1D9E75}
+  .swatch[data-color="#185FA5"]{background:#185FA5;color:#185FA5}
+  .swatch[data-color="#7B4FCD"]{background:#7B4FCD;color:#7B4FCD}
+  .swatch[data-color="#D4501A"]{background:#D4501A;color:#D4501A}
+  .swatch[data-color="#1A7DC4"]{background:#1A7DC4;color:#1A7DC4}
+
+  /* DANGER ZONE */
+  .danger-zone{border-color:rgba(226,75,74,.25)!important}
+  .danger-zone .section-head{border-bottom-color:rgba(226,75,74,.2)!important;background:rgba(226,75,74,.04)}
+
+  /* NOTIFICATION BADGE */
+  .notif-count{background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:18px;text-align:center}
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#c8d4cf;border-radius:3px}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:28px;right:28px;background:var(--sidebar-bg);color:#fff;padding:12px 20px;border-radius:var(--radius-md);font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s}
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast svg{width:16px;height:16px;color:var(--accent);flex-shrink:0}
+
+  /* RANGE INPUT */
+  .range-input{-webkit-appearance:none;width:140px;height:5px;border-radius:3px;background:#d1dad6;outline:none}
+  .range-input::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+
+  /* DARK THEME PILL */
+  .theme-pill{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+  .theme-opt{padding:7px 14px;font-size:12px;font-family:var(--font);cursor:pointer;color:var(--text-secondary);background:var(--card-bg);border:none;display:flex;align-items:center;gap:5px;transition:all .15s}
+  .theme-opt svg{width:13px;height:13px}
+  .theme-opt.active{background:var(--sidebar-bg);color:#fff;font-weight:500}
+  .theme-opt:not(.active):hover{background:var(--page-bg)}
+
+  /* PASSWORD DOTS */
+  .pwd-wrap{position:relative}
+  .pwd-wrap .form-input{padding-right:40px}
+  .pwd-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-muted);background:none;border:none;padding:0;display:flex}
+  .pwd-eye svg{width:15px;height:15px}
+
+  /* CHIP */
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--accent-light);color:var(--accent-dark)}
+
+  /* RESPONSIVE */
+  @media(max-width:900px){
+    .content{flex-direction:column;padding:20px}
+    .settings-nav{width:100%;flex-direction:row;flex-wrap:wrap;position:static}
+    .settings-nav-item{padding:7px 12px}
+  }
+
+  /* ACTIVITY LOG */
+  .log-row{display:flex;align-items:flex-start;gap:12px;padding:14px 22px;border-bottom:1px solid var(--border)}
+  .log-row:last-child{border-bottom:none}
+  .log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+  .log-text{font-size:13px;color:var(--text-primary);line-height:1.4}
+  .log-time{font-size:11px;color:var(--text-muted);margin-top:2px}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="mainSidebar">
+  <div class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff" stroke="none"/></svg></div>
+    <span class="logo-text">FoodSave</span>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Main Menu</div>
+    <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a href="prepared.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a7 7 0 017 7H5a7 7 0 017-7z"/><rect x="3" y="9" width="18" height="3" rx="1"/><path d="M8 12v8M16 12v8M5 20h14"/></svg>Prepared Food</a>
+    <a href="consumed.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Consumed Food</a>
+    <a href="waste.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Waste Food</a>
+    <div class="nav-section">Actions</div>
+    <a href="donations.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>Donations</a>
+    <a href="reports.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Reports</a>
+    <a href="settings.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</a>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="user-row">
+      <div class="avatar">RC</div>
+      <div><div class="user-name">Rahul Chauhan</div><div class="user-role">Canteen Manager</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="topbar-title">
+      <h1>Settings</h1>
+      <p>Manage your profile, preferences, and system configuration</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="icon-btn" style="position:relative" id="notifBtn" onclick="this.querySelector('.notif-panel').classList.toggle('open')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <div class="notif-dot"></div>
+        <div class="notif-panel" id="notifPanel" style="display:none;position:absolute;top:46px;right:0;width:290px;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 8px 30px rgba(0,0,0,.1);z-index:50;overflow:hidden">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--text-primary)">Notifications (2)</div>
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px">
+            <div style="width:8px;height:8px;border-radius:50%;background:#E24B4A;margin-top:4px;flex-shrink:0"></div>
+            <div><div style="font-size:12px;color:var(--text-primary)">High surplus — 38 kg rice pending donation</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">10 mins ago</div></div>
+          </div>
+          <div style="padding:12px 16px;display:flex;gap:10px">
+            <div style="width:8px;height:8px;border-radius:50%;background:#1D9E75;margin-top:4px;flex-shrink:0"></div>
+            <div><div style="font-size:12px;color:var(--text-primary)">Profile last updated 3 days ago</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">3 days ago</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- LEFT NAV -->
+    <nav class="settings-nav" aria-label="Settings sections">
+      <button class="settings-nav-item active" onclick="scrollTo('profile')" id="nav-profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>User Profile
+      </button>
+      <button class="settings-nav-item" onclick="scrollTo('notifications')" id="nav-notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Notifications
+      </button>
+      <button class="settings-nav-item" onclick="scrollTo('appearance')" id="nav-appearance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 010 14"/></svg>Appearance
+      </button>
+      <button class="settings-nav-item" onclick="scrollTo('system')" id="nav-system">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>System
+      </button>
+      <button class="settings-nav-item" onclick="scrollTo('security')" id="nav-security">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Security
+      </button>
+      <button class="settings-nav-item" onclick="scrollTo('activity')" id="nav-activity">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Activity Log
+      </button>
+      <button class="settings-nav-item" onclick="scrollTo('danger')" id="nav-danger" style="color:var(--danger)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Danger Zone
+      </button>
+    </nav>
+
+    <!-- PANELS -->
+    <div class="settings-panels">
+
+      <!-- 1. USER PROFILE -->
+      <div class="settings-section" id="profile">
+        <div class="section-head">
+          <div class="section-icon" style="background:var(--accent-light)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          </div>
+          <div class="section-head-info">
+            <div class="section-title">User Profile</div>
+            <div class="section-desc">Your personal info and role configuration</div>
+          </div>
+        </div>
+
+        <div class="avatar-upload">
+          <div class="avatar-large" onclick="document.getElementById('avatarInput').click()" title="Change photo">
+            <span id="avatarInitials">RC</span>
+            <img id="avatarImg" src="" alt="" style="display:none">
+            <div class="avatar-overlay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+          </div>
+          <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)">
+          <div class="avatar-info">
+            <div class="avatar-name" id="displayName">Rahul Chauhan</div>
+            <div class="avatar-role-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              Canteen Manager
+            </div>
+            <div class="avatar-hint">Click the avatar to upload a new photo (max 2 MB)</div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="firstName">First name</label>
+            <input class="form-input" id="firstName" placeholder="First name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="lastName">Last name</label>
+            <input class="form-input" id="lastName" placeholder="Last name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email">Email address</label>
+            <input class="form-input" id="email" type="email" value="rahul.chauhan@college.edu" placeholder="Email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="phone">Phone number</label>
+            <input class="form-input" id="phone" value="+91 98765 43210" placeholder="+91">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="role">Role</label>
+            <select class="form-select" id="role">
+              <option selected>Canteen Manager</option>
+              <option>Admin</option>
+              <option>Food Supervisor</option>
+              <option>NGO Coordinator</option>
+              <option>Student (View only)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="college">College / Institution</label>
+            <input class="form-input" id="college" value="IIT Gandhinagar" placeholder="Institution name">
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label" for="bio">Bio / Notes</label>
+            <textarea class="form-input" id="bio" rows="3" placeholder="Brief description of your role…" style="resize:vertical">Manages daily food production, waste tracking, and NGO coordination for the campus canteen.</textarea>
+          </div>
+        </div>
+
+        <div class="btn-actions">
+          <button class="btn-outline" onclick="resetProfile()">Discard</button>
+          <button class="btn-primary" onclick="saveProfile()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Save profile
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. NOTIFICATIONS -->
+      <div class="settings-section" id="notifications">
+        <div class="section-head">
+          <div class="section-icon" style="background:var(--warning-light)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="1.8"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          </div>
+          <div class="section-head-info">
+            <div class="section-title">Notifications</div>
+            <div class="section-desc">Control which alerts you receive and how</div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">High waste alerts</div>
+            <div class="setting-hint">Alert when food waste exceeds the configured threshold</div>
+          </div>
+          <label class="toggle" for="notifWaste">
+            <input type="checkbox" id="notifWaste" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Surplus food alerts</div>
+            <div class="setting-hint">Notify when surplus exceeds the donation threshold</div>
+          </div>
+          <label class="toggle" for="notifSurplus">
+            <input type="checkbox" id="notifSurplus" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">NGO pickup confirmations</div>
+            <div class="setting-hint">Notify when an NGO confirms or updates a pickup</div>
+          </div>
+          <label class="toggle" for="notifNGO">
+            <input type="checkbox" id="notifNGO" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Daily summary digest</div>
+            <div class="setting-hint">Receive an end-of-day summary email every evening</div>
+          </div>
+          <label class="toggle" for="notifDigest">
+            <input type="checkbox" id="notifDigest">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Weekly report email</div>
+            <div class="setting-hint">Weekly PDF/CSV report sent every Monday morning</div>
+          </div>
+          <label class="toggle" for="notifWeekly">
+            <input type="checkbox" id="notifWeekly" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Headcount deviation alerts</div>
+            <div class="setting-hint">Alert when actual headcount differs from estimate by &gt; 15%</div>
+          </div>
+          <label class="toggle" for="notifHead">
+            <input type="checkbox" id="notifHead">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row" style="align-items:flex-start;gap:20px">
+          <div>
+            <div class="setting-label">Waste threshold (kg)</div>
+            <div class="setting-hint">Alert triggers when single-session waste is above this</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+            <input type="range" class="range-input" id="wasteThreshold" min="5" max="100" value="30" oninput="document.getElementById('thresholdVal').textContent=this.value">
+            <span id="thresholdVal" style="font-size:13px;font-weight:600;color:var(--text-primary);min-width:38px">30 kg</span>
+          </div>
+        </div>
+
+        <div class="btn-actions">
+          <button class="btn-primary" onclick="saveSection('notification preferences')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Save preferences
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. APPEARANCE -->
+      <div class="settings-section" id="appearance">
+        <div class="section-head">
+          <div class="section-icon" style="background:#f3efff">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#7B4FCD" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 010 14"/></svg>
+          </div>
+          <div class="section-head-info">
+            <div class="section-title">Appearance</div>
+            <div class="section-desc">Theme, colour, and display personalisation</div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Colour theme</div>
+            <div class="setting-hint">Choose the accent colour across all pages</div>
+          </div>
+          <div class="theme-swatches">
+            <div class="swatch selected" data-color="green" style="background:#1D9E75" title="Forest Green" onclick="selectSwatch(this)"></div>
+            <div class="swatch" data-color="blue" style="background:#185FA5" title="Ocean Blue" onclick="selectSwatch(this)"></div>
+            <div class="swatch" data-color="purple" style="background:#534AB7" title="Violet" onclick="selectSwatch(this)"></div>
+            <div class="swatch" data-color="red" style="background:#E24B4A" title="Terracotta" onclick="selectSwatch(this)"></div>
+            <div class="swatch" data-color="amber" style="background:#EF9F27" title="Amber" onclick="selectSwatch(this)"></div>
+            <div class="swatch" data-color="teal" style="background:#0097A7" title="Teal" onclick="selectSwatch(this)"></div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Interface mode</div>
+            <div class="setting-hint">Light, dark, or follow system preference</div>
+          </div>
+          <div class="theme-pill">
+            <button class="theme-opt active" id="modeLight" data-mode="light" onclick="setTheme('light',this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              Light
+            </button>
+            <button class="theme-opt" id="modeDark" data-mode="dark" onclick="setTheme('dark',this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+              Dark
+            </button>
+            <button class="theme-opt" id="modeSystem" data-mode="system" onclick="setTheme('system',this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              System
+            </button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Compact table rows</div>
+            <div class="setting-hint">Reduce row padding in tables for more data density</div>
+          </div>
+          <label class="toggle" for="compactToggle">
+            <input type="checkbox" id="compactToggle">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Animate charts on load</div>
+            <div class="setting-hint">Play entrance animation when charts are rendered</div>
+          </div>
+          <label class="toggle" for="animToggle">
+            <input type="checkbox" id="animToggle" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Sidebar pinned</div>
+            <div class="setting-hint">Keep sidebar always visible (disable for more space)</div>
+          </div>
+          <label class="toggle" for="sidebarPinned">
+            <input type="checkbox" id="sidebarPinned" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="btn-actions">
+          <button class="btn-primary" onclick="saveSection('appearance settings')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Apply changes
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. SYSTEM PREFERENCES -->
+      <div class="settings-section" id="system">
+        <div class="section-head">
+          <div class="section-icon" style="background:var(--info-light)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <div class="section-head-info">
+            <div class="section-title">System Preferences</div>
+            <div class="section-desc">Canteen configuration, data defaults, and export settings</div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="canteenName">Canteen name</label>
+            <input class="form-input" id="canteenName" value="Main Campus Canteen">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="totalStudents">Total enrolled students</label>
+            <input class="form-input" id="totalStudents" type="number" value="400">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="breakfastTime">Breakfast serving time</label>
+            <input class="form-input" id="breakfastTime" type="time" value="07:30">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="lunchTime">Lunch serving time</label>
+            <input class="form-input" id="lunchTime" type="time" value="12:30">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="dinnerTime">Dinner serving time</label>
+            <input class="form-input" id="dinnerTime" type="time" value="19:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="academicYear">Academic year</label>
+            <select class="form-select" id="academicYear">
+              <option>2024–2025</option>
+              <option selected>2025–2026</option>
+              <option>2026–2027</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exportFormat">Default export format</label>
+            <select class="form-select" id="exportFormat">
+              <option selected>CSV (.csv)</option>
+              <option>Excel (.xlsx)</option>
+              <option>PDF (.pdf)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="currency">Currency / unit display</label>
+            <select class="form-select" id="currency">
+              <option selected>Indian Rupee (₹)</option>
+              <option>US Dollar ($)</option>
+              <option>Euro (€)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-row" style="border-top:1px solid var(--border)">
+          <div>
+            <div class="setting-label">Auto-archive entries older than 90 days</div>
+            <div class="setting-hint">Old records are moved to archive (still searchable)</div>
+          </div>
+          <label class="toggle" for="autoArchive">
+            <input type="checkbox" id="autoArchive" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Demand prediction (AI assist)</div>
+            <div class="setting-hint">Use historical data to suggest tomorrow's prep quantities</div>
+          </div>
+          <label class="toggle" for="aiPredict">
+            <input type="checkbox" id="aiPredict" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Show cost savings tracker</div>
+            <div class="setting-hint">Display estimated monetary value of donated food in Reports</div>
+          </div>
+          <label class="toggle" for="costTracker">
+            <input type="checkbox" id="costTracker" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="btn-actions">
+          <button class="btn-primary" onclick="saveSection('system preferences')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Save configuration
+          </button>
+        </div>
+      </div>
+
+      <!-- 5. SECURITY -->
+      <div class="settings-section" id="security">
+        <div class="section-head">
+          <div class="section-icon" style="background:#f0f4ff">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#4A6CF7" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="section-head-info">
+            <div class="section-title">Security</div>
+            <div class="section-desc">Password, session, and access control settings</div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="currentPwd">Current password</label>
+            <div class="pwd-wrap">
+              <input class="form-input" id="currentPwd" type="password" placeholder="Enter current password">
+              <button class="pwd-eye" onclick="togglePwd('currentPwd',this)" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+          </div>
+          <div class="form-group" style="align-self:end">
+            <div style="font-size:11px;color:var(--text-muted);line-height:1.5">Last changed: <strong style="color:var(--text-secondary)">Nov 2024</strong></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newPwd">New password</label>
+            <div class="pwd-wrap">
+              <input class="form-input" id="newPwd" type="password" placeholder="Min 8 characters" oninput="checkPwdStrength(this.value)">
+              <button class="pwd-eye" onclick="togglePwd('newPwd',this)" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+            <div style="height:4px;border-radius:2px;background:#e5eae7;margin-top:6px;overflow:hidden">
+              <div id="pwdStrengthBar" style="height:100%;border-radius:2px;transition:width .3s,background .3s;width:0%"></div>
+            </div>
+            <div id="pwdStrengthLabel" style="font-size:11px;color:var(--text-muted);margin-top:3px">Enter a new password</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirmPwd">Confirm new password</label>
+            <div class="pwd-wrap">
+              <input class="form-input" id="confirmPwd" type="password" placeholder="Re-enter new password">
+              <button class="pwd-eye" onclick="togglePwd('confirmPwd',this)" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-row" style="border-top:1px solid var(--border)">
+          <div>
+            <div class="setting-label">Two-factor authentication</div>
+            <div class="setting-hint">Require OTP on every new device login — <span class="chip">Recommended</span></div>
+          </div>
+          <label class="toggle" for="twoFA">
+            <input type="checkbox" id="twoFA">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Auto logout after inactivity</div>
+            <div class="setting-hint">Automatically sign out after 30 minutes of inactivity</div>
+          </div>
+          <label class="toggle" for="autoLogout">
+            <input type="checkbox" id="autoLogout" checked>
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Active sessions</div>
+            <div class="setting-hint">You're currently logged in on 1 device</div>
+          </div>
+          <button class="btn-outline" onclick="saveSection('sessions cleared')">Sign out all devices</button>
+        </div>
+
+        <div class="btn-actions">
+          <button class="btn-primary" onclick="savePassword()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Update password
+          </button>
+        </div>
+      </div>
+
+      <!-- 6. ACTIVITY LOG -->
+      <div class="settings-section" id="activity">
+        <div class="section-head">
+          <div class="section-icon" style="background:var(--accent-light)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="section-head-info">
+            <div class="section-title">Activity Log</div>
+            <div class="section-desc">Recent actions performed by your account</div>
+          </div>
+        </div>
+
+        <div class="log-row">
+          <div class="log-dot" style="background:#1D9E75"></div>
+          <div><div class="log-text">Logged waste entry — 8 kg rice, Dinner session</div><div class="log-time">Today, 8:14 PM</div></div>
+        </div>
+        <div class="log-row">
+          <div class="log-dot" style="background:#1D9E75"></div>
+          <div><div class="log-text">Added new NGO — Rotary Club of Ahmedabad</div><div class="log-time">Today, 3:42 PM</div></div>
+        </div>
+        <div class="log-row">
+          <div class="log-dot" style="background:#185FA5"></div>
+          <div><div class="log-text">Exported weekly report as PDF</div><div class="log-time">Yesterday, 6:00 PM</div></div>
+        </div>
+        <div class="log-row">
+          <div class="log-dot" style="background:#185FA5"></div>
+          <div><div class="log-text">Updated meal times — Dinner shifted to 7:00 PM</div><div class="log-time">2 days ago</div></div>
+        </div>
+        <div class="log-row">
+          <div class="log-dot" style="background:#BA7517"></div>
+          <div><div class="log-text">Sent surplus notification to Akshaya Patra</div><div class="log-time">3 days ago</div></div>
+        </div>
+        <div class="log-row">
+          <div class="log-dot" style="background:#E24B4A"></div>
+          <div><div class="log-text">High waste alert triggered — 42 kg vegetables wasted</div><div class="log-time">5 days ago</div></div>
+        </div>
+        <div class="log-row">
+          <div class="log-dot" style="background:#1D9E75"></div>
+          <div><div class="log-text">Profile updated — phone number changed</div><div class="log-time">1 week ago</div></div>
+        </div>
+
+        <div style="padding:14px 22px;text-align:center">
+          <button class="btn-outline" style="font-size:12px" onclick="saveSection('full log exported')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export full activity log
+          </button>
+        </div>
+      </div>
+
+      <!-- 7. DANGER ZONE -->
+      <div class="settings-section danger-zone" id="danger">
+        <div class="section-head">
+          <div class="section-icon" style="background:var(--danger-light)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#E24B4A" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="section-head-info">
+            <div class="section-title" style="color:var(--danger)">Danger Zone</div>
+            <div class="section-desc">Irreversible actions — proceed with caution</div>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Clear all food records</div>
+            <div class="setting-hint">Permanently deletes all prepared, consumed, and waste logs. This cannot be undone.</div>
+          </div>
+          <button class="btn-danger" onclick="clearAllRecords()">Clear records</button>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Reset NGO directory</div>
+            <div class="setting-hint">Remove all NGO entries, donation history, and scheduled pickups</div>
+          </div>
+          <button class="btn-danger" onclick="confirmDanger('reset NGO directory')">Reset NGOs</button>
+        </div>
+
+        <div class="setting-row">
+          <div>
+            <div class="setting-label">Delete account</div>
+            <div class="setting-hint">Permanently delete your user account and all associated data. This action is irreversible.</div>
+          </div>
+          <button class="btn-danger" onclick="confirmDanger('delete your account')">Delete account</button>
+        </div>
+      </div>
+
+    </div><!-- end settings-panels -->
+  </div><!-- end content -->
+</div><!-- end main -->
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg">Changes saved</span>
+</div>
+
+<script>
+  // ===== TOAST =====
+  function showToast(msg, isError=false) {
+    const t = document.getElementById('toast');
+    const icon = t.querySelector('svg');
+    document.getElementById('toastMsg').textContent = msg;
+    icon.style.color = isError ? '#E24B4A' : '#1D9E75';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ===== SAVE HELPERS =====
+  function saveSection(label) { showToast('Saved: ' + label); }
+
+  function saveProfile() {
+    const fn = document.getElementById('firstName').value.trim();
+    const ln = document.getElementById('lastName').value.trim();
+    if (!fn || !ln) { showToast('Name fields are required', true); return; }
+
+    // Build one complete settings object and save atomically
+    const s = FoodSettings.get();
+    s.firstName      = fn;
+    s.lastName       = ln;
+    s.role           = document.getElementById('role')?.value || s.role;
+    s.avatarInitials = (fn[0] + ln[0]).toUpperCase();
+    s.email          = document.getElementById('email')?.value?.trim() || s.email;
+    s.phone          = document.getElementById('phone')?.value?.trim() || s.phone;
+
+    FoodSettings.save(s);   // persist to localStorage
+    FoodSettings.apply(s);  // update this page immediately
+    showToast('✅ Profile saved — name will appear on all pages');
+  }
+
+  function resetProfile() {
+    document.getElementById('firstName').value = 'Rahul';
+    document.getElementById('lastName').value = 'Chauhan';
+    document.getElementById('email').value = 'rahul.chauhan@college.edu';
+    document.getElementById('phone').value = '+91 98765 43210';
+    showToast('Profile discarded — reset to last saved');
+  }
+
+  // ===== AVATAR =====
+  function previewAvatar(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    if (file.size > 2 * 1024 * 1024) { showToast('File too large (max 2 MB)', true); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.getElementById('avatarImg');
+      img.src = e.target.result;
+      img.style.display = 'block';
+      document.getElementById('avatarInitials').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+    showToast('Avatar updated — save your profile to confirm');
+  }
+
+  // ===== THEME =====
+  // Accent swatch definitions (label → colors)
+  const SWATCHES = {
+    green:  { accent: '#1D9E75', dark: '#0F6E56', light: '#E1F5EE' },
+    blue:   { accent: '#185FA5', dark: '#0C447C', light: '#E6F1FB' },
+    purple: { accent: '#534AB7', dark: '#3C3489', light: '#EEEDFE' },
+    red:    { accent: '#E24B4A', dark: '#A32D2D', light: '#FCEBEB' },
+    amber:  { accent: '#EF9F27', dark: '#BA7517', light: '#FAEEDA' },
+    teal:   { accent: '#0097A7', dark: '#006978', light: '#E0F7FA' },
+  };
+
+  function setTheme(mode, btn) {
+    document.querySelectorAll('.theme-opt').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    FoodSettings.set('theme', mode);
+    showToast('✅ Theme changed to ' + mode + ' mode — applied to all pages');
+  }
+
+  function selectSwatch(el) {
+    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    const colorName = el.dataset.color || 'green';
+    const sw = SWATCHES[colorName] || SWATCHES.green;
+    // Save all three accent values at once
+    const s = FoodSettings.get();
+    s.accentColor = sw.accent;
+    s.accentDark  = sw.dark;
+    s.accentLight = sw.light;
+    FoodSettings.save(s);
+    FoodSettings.apply(s);
+    showToast('✅ Accent colour updated — applied to all pages');
+  }
+
+  // ===== PASSWORD =====
+  function togglePwd(id, btn) {
+    const inp = document.getElementById(id);
+    const isHidden = inp.type === 'password';
+    inp.type = isHidden ? 'text' : 'password';
+    btn.querySelector('svg').innerHTML = isHidden
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+
+  function checkPwdStrength(pwd) {
+    const bar = document.getElementById('pwdStrengthBar');
+    const lbl = document.getElementById('pwdStrengthLabel');
+    let strength = 0;
+    if (pwd.length >= 8) strength++;
+    if (/[A-Z]/.test(pwd)) strength++;
+    if (/[0-9]/.test(pwd)) strength++;
+    if (/[^A-Za-z0-9]/.test(pwd)) strength++;
+    const levels = [
+      {w:'0%',bg:'#d1dad6',t:'Enter a new password'},
+      {w:'25%',bg:'#E24B4A',t:'Weak'},
+      {w:'50%',bg:'#BA7517',t:'Fair'},
+      {w:'75%',bg:'#1A7DC4',t:'Good'},
+      {w:'100%',bg:'#1D9E75',t:'Strong 💪'},
+    ];
+    const lvl = levels[strength] || levels[0];
+    bar.style.width = lvl.w;
+    bar.style.background = lvl.bg;
+    lbl.textContent = lvl.t;
+    lbl.style.color = lvl.bg;
+  }
+
+  function savePassword() {
+    const cur = document.getElementById('currentPwd').value;
+    const nw = document.getElementById('newPwd').value;
+    const conf = document.getElementById('confirmPwd').value;
+    if (!cur || !nw) { showToast('Please fill all password fields', true); return; }
+    if (nw.length < 8) { showToast('Password must be at least 8 characters', true); return; }
+    if (nw !== conf) { showToast('Passwords do not match', true); return; }
+    showToast('Password updated successfully');
+    document.getElementById('currentPwd').value = '';
+    document.getElementById('newPwd').value = '';
+    document.getElementById('confirmPwd').value = '';
+    document.getElementById('pwdStrengthBar').style.width = '0%';
+    document.getElementById('pwdStrengthLabel').textContent = 'Enter a new password';
+    document.getElementById('pwdStrengthLabel').style.color = '';
+  }
+
+  // ===== SCROLL NAV =====
+  function scrollTo(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.remove('active'));
+    const navBtn = document.getElementById('nav-' + id);
+    if (navBtn) navBtn.classList.add('active');
+  }
+
+  // Intersection observer to highlight active nav
+  const sections = ['profile','notifications','appearance','system','security','activity','danger'];
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.remove('active'));
+        const navBtn = document.getElementById('nav-' + id);
+        if (navBtn) navBtn.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+  sections.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
+
+  // ===== DANGER =====
+  function confirmDanger(action) {
+    const ok = confirm('⚠️ Are you sure you want to ' + action + '?\n\nThis action cannot be undone.');
+    if (ok) showToast('Action cancelled — this is a demo', true);
+  }
+
+  function clearAllRecords() {
+    const ok = confirm('⚠️ Clear ALL food records?\n\nThis will permanently delete all prepared, consumed, waste and donation records from your browser.\n\nThis cannot be undone.');
+    if (!ok) return;
+    try {
+      FoodDB.resetAll();
+      showToast('✅ All records cleared. Data reset to seed values.');
+    } catch(e) {
+      showToast('All records cleared (FoodDB not available in this context).', true);
+    }
+  }
+
+  // ===== NOTIFICATION PANEL OUTSIDE CLICK =====
+  document.addEventListener('click', e => {
+    const btn = document.getElementById('notifBtn');
+    const panel = document.getElementById('notifPanel');
+    if (!btn.contains(e.target)) panel.style.display = 'none';
+    else panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  });
+
+  // ===== WASTE THRESHOLD LIVE LABEL =====
+  document.getElementById('wasteThreshold').addEventListener('input', function() {
+    document.getElementById('thresholdVal').textContent = this.value + ' kg';
+    FoodSettings.set('wasteThreshold', this.value);
+  });
+
+  // ===== COMPACT TABLES TOGGLE =====
+  const compactToggle = document.getElementById('compactToggle');
+  if (compactToggle) {
+    compactToggle.checked = FoodSettings.get('compactTables');
+    compactToggle.addEventListener('change', function() {
+      FoodSettings.set('compactTables', this.checked);
+      showToast(this.checked ? '✅ Compact tables enabled' : '✅ Compact tables disabled');
+    });
+  }
+
+  // ===== ANIMATIONS TOGGLE =====
+  const animToggle = document.getElementById('animToggle');
+  if (animToggle) {
+    animToggle.checked = FoodSettings.get('animationsEnabled') !== false;
+    animToggle.addEventListener('change', function() {
+      FoodSettings.set('animationsEnabled', this.checked);
+      showToast(this.checked ? '✅ Animations enabled' : '✅ Animations disabled');
+    });
+  }
+
+  // ===== INIT: Pre-fill form from saved settings =====
+  (function initSettingsForm() {
+    const s = FoodSettings.get();
+
+    // Profile fields
+    const fnEl = document.getElementById('firstName');
+    const lnEl = document.getElementById('lastName');
+    if (fnEl) fnEl.value = s.firstName || 'Rahul';
+    if (lnEl) lnEl.value = s.lastName  || 'Chauhan';
+
+    const emailEl = document.getElementById('email');
+    if (emailEl && s.email) emailEl.value = s.email;
+
+    const phoneEl = document.getElementById('phone');
+    if (phoneEl && s.phone) phoneEl.value = s.phone;
+
+    // Theme buttons
+    document.querySelectorAll('.theme-opt').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === (s.theme || 'light'));
+    });
+
+    // Accent swatches — find matching swatch by accent color
+    document.querySelectorAll('.swatch').forEach(sw => {
+      const swColor = getComputedStyle(sw).backgroundColor;
+      // mark selected if data-color matches stored accent key
+      if (sw.dataset.color) {
+        const SWATCH_MAP = {
+          green: '#1D9E75', blue: '#185FA5', purple: '#534AB7',
+          red: '#E24B4A', amber: '#EF9F27', teal: '#0097A7'
+        };
+        sw.classList.toggle('selected',
+          SWATCH_MAP[sw.dataset.color] === (s.accentColor || '#1D9E75'));
+      }
+    });
+
+    // Waste threshold
+    const wtEl = document.getElementById('wasteThreshold');
+    const tvEl = document.getElementById('thresholdVal');
+    if (wtEl && s.wasteThreshold) {
+      wtEl.value = s.wasteThreshold;
+      if (tvEl) tvEl.textContent = s.wasteThreshold + ' kg';
+    }
+  })();
+</script>
+</body>
+</html>

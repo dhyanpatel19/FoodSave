@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consumed Food — FoodSave</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="db.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="mobile.css">
+<script src="settings-sync.js"></script>
+<script src="mobile.js" defer></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --sidebar-bg:#0d2b22;--accent:#1D9E75;--accent-dark:#0F6E56;--accent-light:#E1F5EE;
+    --page-bg:#f0f4f2;--card-bg:#ffffff;--border:#e5eae7;
+    --text-primary:#0d2b22;--text-secondary:#6b7c74;--text-muted:#9baaa2;
+    --danger:#E24B4A;--danger-light:#FCEBEB;--warning:#BA7517;--warning-light:#FAEEDA;
+    --info:#185FA5;--info-light:#E6F1FB;--font:'Plus Jakarta Sans',sans-serif;
+    --radius-sm:6px;--radius-md:10px;--radius-lg:14px;--sidebar-width:230px;
+  }
+  body{font-family:var(--font);background:var(--page-bg);color:var(--text-primary);display:flex;min-height:100vh;font-size:14px}
+  .sidebar{width:var(--sidebar-width);min-width:var(--sidebar-width);background:var(--sidebar-bg);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .logo{display:flex;align-items:center;gap:10px;padding:22px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .logo-icon{width:34px;height:34px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo-icon svg{width:18px;height:18px}
+  .logo-text{font-size:15px;font-weight:600;color:#fff;letter-spacing:-.2px}
+  .nav{padding:16px 0;flex:1}
+  .nav-section{font-size:10px;color:rgba(255,255,255,.3);padding:14px 20px 6px;text-transform:uppercase;letter-spacing:.1em;font-weight:500}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;border-left:3px solid transparent;text-decoration:none}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0}
+  .nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9)}
+  .nav-item.active{background:rgba(24,95,165,.15);color:#85B7EB;border-left:3px solid var(--info);font-weight:500}
+  .sidebar-bottom{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+  .user-row{display:flex;align-items:center;gap:10px}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
+  .user-name{font-size:12px;font-weight:600;color:#fff}
+  .user-role{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{background:var(--card-bg);border-bottom:1px solid var(--border);padding:0 28px;height:62px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10}
+  .topbar-title{flex:1}
+  .topbar-title h1{font-size:17px;font-weight:600;color:var(--text-primary)}
+  .topbar-title p{font-size:12px;color:var(--text-secondary);margin-top:1px}
+  .btn-primary{display:flex;align-items:center;gap:6px;background:var(--info);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 16px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;transition:background .15s}
+  .btn-primary:hover{background:#0C447C}
+  .btn-primary svg{width:14px;height:14px}
+  .btn-outline{display:flex;align-items:center;gap:6px;background:var(--card-bg);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;font-size:13px;font-family:var(--font);cursor:pointer;transition:all .15s}
+  .btn-outline:hover{background:var(--page-bg);color:var(--text-primary)}
+  .btn-outline svg{width:14px;height:14px}
+  .content{flex:1;padding:24px 28px;display:flex;flex-direction:column;gap:20px}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .stat-card{background:var(--card-bg);border-radius:var(--radius-lg);border:1px solid var(--border);padding:18px 20px;display:flex;align-items:center;justify-content:space-between}
+  .stat-label{font-size:11px;color:var(--text-secondary);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+  .stat-value{font-size:24px;font-weight:600;color:var(--text-primary);line-height:1}
+  .stat-change{display:flex;align-items:center;gap:4px;font-size:11px;margin-top:5px}
+  .stat-change svg{width:11px;height:11px}
+  .change-up{color:var(--accent-dark)}
+  .change-down{color:var(--danger)}
+  .stat-icon{width:48px;height:48px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .stat-icon svg{width:22px;height:22px}
+  .ic-green{background:var(--accent-light)}
+  .ic-blue{background:var(--info-light)}
+  .ic-red{background:var(--danger-light)}
+  .ic-amber{background:var(--warning-light)}
+  .main-grid{display:grid;grid-template-columns:1fr 300px;gap:18px}
+  .card{background:var(--card-bg);border-radius:var(--radius-lg);border:1px solid var(--border);padding:20px 22px}
+  .card-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+  .card-sub{font-size:12px;color:var(--text-secondary);margin-top:2px}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+  td{padding:12px 12px;font-size:13px;color:var(--text-primary);border-bottom:1px solid #f5f7f6;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:#fafcfb}
+  .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .badge-green{background:var(--accent-light);color:var(--accent-dark)}
+  .badge-blue{background:var(--info-light);color:#0C447C}
+  .badge-amber{background:var(--warning-light);color:#854F0B}
+  .badge-red{background:var(--danger-light);color:#A32D2D}
+  .progress-wrap{display:flex;align-items:center;gap:8px}
+  .progress-bg{flex:1;height:7px;background:var(--page-bg);border-radius:4px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:4px}
+  .ftab{padding:5px 13px;border-radius:20px;font-size:12px;font-family:var(--font);cursor:pointer;border:1px solid var(--border);background:var(--card-bg);color:var(--text-secondary);transition:all .15s}
+  .ftab.active{background:var(--sidebar-bg);color:#fff;border-color:var(--sidebar-bg);font-weight:500}
+  .right-panel{display:flex;flex-direction:column;gap:16px}
+  .headcount-box{background:var(--info-light);border:1px solid #B5D4F4;border-radius:var(--radius-md);padding:16px}
+  .hc-number{font-size:32px;font-weight:600;color:var(--info);line-height:1}
+  .hc-label{font-size:12px;color:#185FA5;margin-top:4px}
+  .hc-bar-bg{height:8px;background:#B5D4F4;border-radius:4px;margin-top:12px;overflow:hidden}
+  .hc-bar-fill{height:100%;border-radius:4px;background:var(--info)}
+  .meal-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+  .meal-row:last-child{border-bottom:none}
+  .meal-name{font-size:13px;font-weight:500;color:var(--text-primary)}
+  .meal-time{font-size:11px;color:var(--text-muted);margin-top:2px}
+  .meal-count{font-size:13px;font-weight:600;color:var(--info)}
+  .cat-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .cat-label{font-size:12px;color:var(--text-secondary);width:80px;flex-shrink:0}
+  .cat-bar-bg{flex:1;height:8px;background:var(--page-bg);border-radius:4px;overflow:hidden}
+  .cat-bar-fill{height:100%;border-radius:4px}
+  .cat-val{font-size:12px;font-weight:600;color:var(--text-primary);width:40px;text-align:right;flex-shrink:0}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:var(--radius-lg);padding:28px;width:460px;max-width:95vw}
+  .modal-title{font-size:16px;font-weight:600;margin-bottom:4px}
+  .modal-sub{font-size:13px;color:var(--text-secondary);margin-bottom:20px}
+  .form-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .form-group2{margin-bottom:12px}
+  .form-label2{font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;display:block}
+  .form-input2{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);color:var(--text-primary);outline:none;transition:border .15s}
+  .form-input2:focus{border-color:var(--info)}
+  .modal-actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+  .btn-cancel{padding:9px 18px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;font-size:13px;font-family:var(--font);cursor:pointer;color:var(--text-secondary)}
+  .btn-save{padding:9px 20px;border:none;border-radius:var(--radius-sm);background:var(--info);color:#fff;font-size:13px;font-family:var(--font);font-weight:500;cursor:pointer}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#c8d4cf;border-radius:3px}
+  .toast.show{transform:translateY(0)!important;opacity:1!important}
+</style>
+</head>
+<body>
+<div class="sidebar" id="mainSidebar">
+  <div class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff" stroke="none"/></svg></div>
+    <span class="logo-text">FoodSave</span>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Main Menu</div>
+    <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a href="prepared.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a7 7 0 017 7H5a7 7 0 017-7z"/><rect x="3" y="9" width="18" height="3" rx="1"/><path d="M8 12v8M16 12v8M5 20h14"/></svg>Prepared Food</a>
+    <a href="consumed.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Consumed Food</a>
+    <a href="waste.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Waste Food</a>
+    <div class="nav-section">Actions</div>
+    <a href="donations.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>Donations</a>
+    <a href="reports.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Reports</a>
+    <a href="settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</a>
+  </div>
+  <div class="sidebar-bottom"><div class="user-row"><div class="avatar">RC</div><div><div class="user-name">Rahul Chauhan</div><div class="user-role">Canteen Manager</div></div></div></div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="main">
+  <div class="topbar">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="topbar-title">
+      <h1>Consumed Food</h1>
+      <p>Track student meals, headcount and daily consumption data</p>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-outline" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+      </button>
+      <button class="btn-primary" onclick="openConsumedModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Log Consumption
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div><div class="stat-label">Students served today</div><div class="stat-value" style="color:var(--info)" id="cStatServed">-</div><div class="stat-change change-up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>Live from DB</div></div>
+        <div class="stat-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <div><div class="stat-label">Total consumed today</div><div class="stat-value" id="cStatConsumed">-</div><div class="stat-change change-up" id="cStatPct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>-% of prepared</div></div>
+        <div class="stat-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8"><path d="M12 2a7 7 0 017 7H5a7 7 0 017-7z"/><rect x="3" y="9" width="18" height="3" rx="1"/><path d="M8 12v8M16 12v8M5 20h14"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <div><div class="stat-label">Avg per student</div><div class="stat-value" id="cStatAvg">-</div><div class="stat-change" style="color:var(--text-muted)">Per meal serving</div></div>
+        <div class="stat-icon ic-amber"><svg viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <div><div class="stat-label">This month meals</div><div class="stat-value" id="cStatMonth">—</div><div class="stat-change change-up" id="cStatMonthSub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>Loading…</div></div>
+        <div class="stat-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div style="display:flex;flex-direction:column;gap:16px">
+
+        <!-- FILTER + TABLE -->
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="ftab active" onclick="setPeriod(this)">Today</button>
+          <button class="ftab" onclick="setPeriod(this)">This week</button>
+          <button class="ftab" onclick="setPeriod(this)">This month</button>
+          <select onchange="" style="margin-left:auto;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:var(--font);color:var(--text-secondary);outline:none;background:#fff">
+            <option>All meal times</option><option>Breakfast</option><option>Lunch</option><option>Dinner</option>
+          </select>
+        </div>
+
+        <div class="card" style="padding:0 0 4px">
+          <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div><div class="card-title">Consumption log</div><div class="card-sub" id="consumptionDateLabel"></div></div>
+            <span style="font-size:12px;color:var(--accent);font-weight:600" id="cTableTotal">Loading…</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="padding-left:22px">Food item</th>
+                <th>Meal time</th>
+                <th>Prepared</th>
+                <th>Consumed</th>
+                <th>Students</th>
+                <th>Consumption rate</th>
+                <th style="padding-right:22px">Status</th>
+              </tr>
+            </thead>
+            <tbody id="consumedTable">
+              <tr><td colspan="7" style="text-align:center;padding:28px;color:#9baaa2">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- WEEKLY CHART -->
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Weekly consumption trend</div><div class="card-sub">Prepared vs consumed — last 7 days</div></div>
+          </div>
+          <div style="display:flex;gap:14px;margin-bottom:12px">
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block"></span>Consumed</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:2px;background:#B5D4F4;display:inline-block"></span>Prepared</span>
+          </div>
+          <div style="position:relative;width:100%;height:180px"><canvas id="weekChart" role="img" aria-label="Bar chart of consumed vs prepared food per day">Weekly trend data.</canvas></div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="right-panel">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">Today's headcount</div>
+          <div class="headcount-box">
+            <div class="hc-number" id="hcNumber">—</div>
+            <div class="hc-label">students served today</div>
+            <div class="hc-bar-bg"><div class="hc-bar-fill" id="hcBar" style="width:0%"></div></div>
+            <div style="font-size:11px;color:#185FA5;margin-top:6px" id="hcPct">No data yet</div>
+          </div>
+          <div style="margin-top:14px" id="mealBreakdown">
+            <div class="meal-row" style="color:#9baaa2;font-size:12px;padding:12px 0">No meal data today</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:14px">Consumption by category</div>
+          <div id="catBars"><div style="font-size:12px;color:var(--text-muted)">No data yet</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">Consumption rate</div>
+          <div style="position:relative;width:100%;height:160px"><canvas id="donutChart" role="img" aria-label="Donut chart showing 84% consumption rate">84% food consumed.</canvas></div>
+          <div style="display:flex;justify-content:center;gap:16px;margin-top:10px">
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block"></span><span id="donutLblConsumed">Consumed —</span></span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary)"><span style="width:10px;height:10px;border-radius:2px;background:#F09595;display:inline-block"></span><span id="donutLblWaste">Waste —</span></span>
+          </div>
+        </div>
+
+        <div style="background:#E6F1FB;border:1px solid #B5D4F4;border-radius:var(--radius-md);padding:14px">
+          <div style="font-size:13px;font-weight:600;color:#0C447C;margin-bottom:6px">Demand prediction</div>
+          <div style="font-size:12px;color:#185FA5;line-height:1.6">Based on this week's trend, tomorrow's estimated headcount is <strong>~290 students</strong>. Consider preparing <strong>120 kg</strong> total to minimize waste.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="addModal" onclick="if(event.target.id==='addModal')this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-title">Log consumption entry</div>
+    <div class="modal-sub">Record how much food was consumed at each meal</div>
+    <input type="hidden" id="cEditId">
+    <div class="form-row2">
+      <div class="form-group2">
+        <label class="form-label2">Food item *</label>
+        <select class="form-input2" id="cNameSelect" onchange="onPrepSelectC(this)">
+          <option value="">— Select from today's prepared —</option>
+        </select>
+        <input class="form-input2" id="cName" placeholder="Type food item name" style="margin-top:6px;display:none">
+      </div>
+      <div class="form-group2"><label class="form-label2">Meal time</label><select class="form-input2" id="cMeal"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snacks</option></select></div>
+    </div>
+    <div class="form-row2">
+      <div class="form-group2"><label class="form-label2">Prepared (kg) *</label><input class="form-input2" id="cPrep" type="number" placeholder="0" min="0"></div>
+      <div class="form-group2"><label class="form-label2">Consumed (kg) *</label><input class="form-input2" id="cCons" type="number" placeholder="0" min="0"></div>
+    </div>
+    <div class="form-row2">
+      <div class="form-group2"><label class="form-label2">Students served</label><input class="form-input2" id="cStudents" type="number" placeholder="0" min="0"></div>
+      <div class="form-group2"><label class="form-label2">Date</label><input class="form-input2" type="date" id="cDate"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="document.getElementById('addModal').classList.remove('open')">Cancel</button>
+      <button class="btn-save" onclick="saveEntry()">Save entry</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ========================================================
+     CONSUMED FOOD — FoodDB connected backend
+  ======================================================== */
+  let weekChartC, donutChartC;
+  let editIdC = null;
+  let delIdC  = null;
+  let toastTC;
+  const MEAL_ICON = {Breakfast:'🌅',Lunch:'☀️',Dinner:'🌙',Snacks:'🍪'};
+
+  function todayC(){ return new Date().toISOString().slice(0,10); }
+
+  function toastC(msg,err=false){
+    const t=document.getElementById('cToast');
+    document.getElementById('cToastMsg').textContent=msg;
+    t.querySelector('svg').style.color=err?'#E24B4A':'#1D9E75';
+    t.classList.add('show');
+    clearTimeout(toastTC);
+    toastTC=setTimeout(()=>t.classList.remove('show'),3200);
+  }
+
+  /* ── STATS ── */
+  function updateStatsC(rows){
+    const served   = rows.reduce((s,r)=>s+parseInt(r.students||0),0);
+    const consumed  = rows.reduce((s,r)=>s+parseFloat(r.consumedKg||0),0);
+    const prepared  = rows.reduce((s,r)=>s+parseFloat(r.preparedKg||0),0);
+    const pct = prepared>0?Math.round(consumed/prepared*100):0;
+    document.getElementById('cStatServed').textContent  = served.toLocaleString();
+    document.getElementById('cStatConsumed').textContent= consumed.toFixed(0)+' kg';
+    document.getElementById('cStatPct').textContent     = pct+'% of prepared';
+    document.getElementById('cStatAvg').textContent     = served>0?(consumed/served).toFixed(2)+' kg':'—';
+    document.getElementById('cTableTotal').textContent  = `Total: ${consumed.toFixed(0)} kg consumed`;
+  }
+
+  /* ── HEADCOUNT BOX ── */
+  function updateHeadcount(todayRows){
+    const ENROLLED = 400;
+    const served = todayRows.reduce((s,r)=>s+parseInt(r.students||0),0);
+    const pct = Math.min(Math.round(served/ENROLLED*100),100);
+    document.getElementById('hcNumber').textContent = served||'—';
+    document.getElementById('hcBar').style.width = pct+'%';
+    document.getElementById('hcPct').textContent = served>0?`${pct}% of total enrolled (${ENROLLED})`:'No headcount data today';
+    // per-meal breakdown
+    const byMeal={};
+    todayRows.forEach(r=>{byMeal[r.meal]=(byMeal[r.meal]||0)+parseInt(r.students||0);});
+    const mealOrder=['Breakfast','Lunch','Dinner','Snacks'];
+    const mealTime={Breakfast:'7:30 AM',Lunch:'12:30 PM',Dinner:'7:00 PM',Snacks:'4:00 PM'};
+    const el=document.getElementById('mealBreakdown');
+    const have=mealOrder.filter(m=>byMeal[m]);
+    if(!have.length){
+      el.innerHTML='<div class="meal-row" style="color:#9baaa2;font-size:12px;padding:12px 0">No meal data today</div>';
+      return;
+    }
+    el.innerHTML=have.map(m=>`
+      <div class="meal-row">
+        <div><div class="meal-name">${m}</div><div class="meal-time">${mealTime[m]||''}</div></div>
+        <div class="meal-count">${byMeal[m].toLocaleString()} students</div>
+      </div>`).join('');
+  }
+
+  /* ── CATEGORY BARS ── */
+  function updateCategoryBars(todayRows){
+    const CAT_COLORS=['#1D9E75','#185FA5','#639922','#EF9F27','#E24B4A','#B4B2A9'];
+    const byCat={};
+    todayRows.forEach(r=>{
+      const cat=r.name||'Other';
+      byCat[cat]=(byCat[cat]||0)+parseFloat(r.consumedKg||0);
+    });
+    const sorted=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const maxKg=sorted[0]?.[1]||1;
+    const el=document.getElementById('catBars');
+    if(!sorted.length){
+      el.innerHTML='<div style="font-size:12px;color:var(--text-muted)">No data yet</div>';
+      return;
+    }
+    el.innerHTML=sorted.map(([name,kg],i)=>`
+      <div class="cat-row">
+        <span class="cat-label" style="font-size:11px">${name.length>10?name.slice(0,9)+'…':name}</span>
+        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${Math.round(kg/maxKg*100)}%;background:${CAT_COLORS[i%CAT_COLORS.length]}"></div></div>
+        <span class="cat-val">${kg.toFixed(0)} kg</span>
+      </div>`).join('');
+  }
+
+  /* ── DONUT LEGEND ── */
+  function updateDonutLegend(consP,wasteP){
+    document.getElementById('donutLblConsumed').textContent='Consumed '+(consP||0)+'%';
+    document.getElementById('donutLblWaste').textContent='Waste '+(wasteP||0)+'%';
+  }
+
+    /* ── RENDER TABLE (merged Prepared + Consumed) ── */
+  function renderTableC(){
+    const period = document.querySelector('.ftab.active')?.textContent||'Today';
+    const allCons = FoodDB.consumed.getAll();
+    const allPrep = FoodDB.prepared.getAll();
+    const td = todayC();
+
+    /* filter by period */
+    let prepRows=allPrep, consRows=allCons;
+    if(period==='Today'){
+      prepRows=allPrep.filter(r=>r.date===td);
+      consRows=allCons.filter(r=>r.date===td);
+    } else if(period==='This week'){
+      const ws=new Date();ws.setDate(ws.getDate()-7);
+      const wstr=ws.toISOString().slice(0,10);
+      prepRows=allPrep.filter(r=>r.date>=wstr);
+      consRows=allCons.filter(r=>r.date>=wstr);
+    } else if(period==='This month'){
+      const ms=new Date();ms.setDate(ms.getDate()-30);
+      const mstr=ms.toISOString().slice(0,10);
+      prepRows=allPrep.filter(r=>r.date>=mstr);
+      consRows=allCons.filter(r=>r.date>=mstr);
+    }
+
+    updateStatsC(consRows);
+    const todayRows=allCons.filter(r=>r.date===td);
+    updateHeadcount(todayRows);
+    updateCategoryBars(todayRows);
+
+    /* merge: each prepared item paired with its consumed record */
+    const usedConsIds=new Set();
+    const merged=[];
+    prepRows.forEach(p=>{
+      const cons=consRows.find(c=>
+        c.name.toLowerCase()===p.name.toLowerCase() &&
+        c.meal===p.meal && c.date===p.date
+      );
+      if(cons) usedConsIds.add(cons.id);
+      merged.push({
+        id:cons?cons.id:null, prepId:p.id,
+        name:p.name, meal:p.meal, date:p.date,
+        preparedKg:parseFloat(p.qty||0),
+        consumedKg:cons!=null?parseFloat(cons.consumedKg||0):null,
+        students:cons?cons.students:null,
+        logged:!!cons
+      });
+    });
+    /* also include consumed entries with no matching prepared item */
+    consRows.filter(c=>!usedConsIds.has(c.id)).forEach(c=>{
+      merged.push({
+        id:c.id, prepId:null, name:c.name, meal:c.meal, date:c.date,
+        preparedKg:parseFloat(c.preparedKg||0),
+        consumedKg:parseFloat(c.consumedKg||0),
+        students:c.students, logged:true
+      });
+    });
+
+    const ydObj = new Date(); ydObj.setDate(ydObj.getDate()-1);
+    const yd = ydObj.toISOString().slice(0,10);
+    const fmtDate = (d) => (d===td ? 'Today' : (d===yd ? 'Yesterday' : d));
+    
+    document.getElementById('consumptionDateLabel').textContent = 
+      new Date(td).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}) + ' — ' + merged.length + ' entries';
+
+    const tbody=document.getElementById('consumedTable');
+    if(!merged.length){
+      tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:32px;color:#9baaa2">No food entries found. <a href="prepared.html" style="color:var(--info)">Add items in Prepared Food</a></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML=merged.map(r=>{
+      const pct=r.preparedKg>0&&r.consumedKg!==null?Math.round((r.consumedKg/r.preparedKg)*100):0;
+      const barColor=pct>=85?'#1D9E75':pct>=60?'#EF9F27':'#E24B4A';
+      const mi=MEAL_ICON[r.meal]||'';
+      const safeName=r.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+      if(!r.logged){
+        return '<tr data-id="'+r.prepId+'" style="background:#fffdf5">'
+          +'<td style="padding-left:22px"><div style="display:flex;align-items:center;gap:10px">'
+          +'<div style="width:32px;height:32px;border-radius:8px;background:#FAEEDA;display:flex;align-items:center;justify-content:center;font-size:15px">🍽</div>'
+          +'<div><div style="font-weight:500;font-size:13px">'+r.name+'</div><div style="font-size:11px;color:var(--text-muted)">'+r.meal+' · '+fmtDate(r.date)+'</div></div>'
+          +'</div></td>'
+          +'<td style="font-size:12px;color:var(--text-secondary)">'+mi+' '+r.meal+'</td>'
+          +'<td style="font-weight:500">'+r.preparedKg+' kg</td>'
+          +'<td style="color:var(--text-muted);font-style:italic;font-size:12px">Not logged yet</td>'
+          +'<td style="color:var(--text-muted)">—</td>'
+          +'<td><span style="font-size:11px;color:var(--warning);font-weight:600">⏳ Pending</span></td>'
+          +'<td style="padding-right:22px">'
+          +'<button class="action-link" style="color:var(--info);font-weight:600" '
+          +'onclick="openConsumedModalForItem(\''+safeName+'\',\''+r.meal+'\','+r.preparedKg+',\''+r.date+'\')">Log now →</button>'
+          +'</td></tr>';
+      }
+
+      const statusBadge=pct>=85?'<span class="badge badge-green">Good</span>':pct>=60?'<span class="badge badge-amber">Partial</span>':'<span class="badge badge-red">Low</span>';
+      return '<tr data-id="'+r.id+'">'
+        +'<td style="padding-left:22px"><div style="display:flex;align-items:center;gap:10px">'
+        +'<div style="width:32px;height:32px;border-radius:8px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:15px">🍽</div>'
+        +'<div><div style="font-weight:500;font-size:13px">'+r.name+'</div><div style="font-size:11px;color:var(--text-muted)">'+r.meal+' · '+fmtDate(r.date)+'</div></div>'
+        +'</div></td>'
+        +'<td style="font-size:12px;color:var(--text-secondary)">'+mi+' '+r.meal+'</td>'
+        +'<td>'+r.preparedKg+' kg</td>'
+        +'<td style="font-weight:500;color:var(--accent)">'+r.consumedKg+' kg</td>'
+        +'<td>'+(r.students||'—')+' students</td>'
+        +'<td><div class="progress-wrap"><div class="progress-bg"><div class="progress-fill" style="width:'+pct+'%;background:'+barColor+'"></div></div>'
+        +'<span style="font-size:11px;font-weight:600;white-space:nowrap;color:'+barColor+'">'+pct+'%</span></div></td>'
+        +'<td style="padding-right:22px">'+statusBadge+'</td>'
+        +'</tr>';
+    }).join('');
+  }
+
+  /* ── PRE-FILL MODAL FROM A PREPARED ITEM ── */
+  function openConsumedModalForItem(name,meal,prepKg,date){
+    document.getElementById('cEditId').value='';
+    const sel=document.getElementById('cNameSelect');
+    sel.innerHTML='<option value="__manual__">✏️ '+name+'</option>';
+    sel.value='__manual__';
+    document.getElementById('cName').value=name;
+    document.getElementById('cName').style.display='';
+    document.getElementById('cMeal').value=meal;
+    document.getElementById('cPrep').value=prepKg;
+    document.getElementById('cDate').value=date;
+    document.getElementById('cCons').value='';
+    document.getElementById('cStudents').value='';
+    document.getElementById('addModal').classList.add('open');
+    setTimeout(function(){document.getElementById('cCons').focus();},80);
+  }
+
+
+  /* ── OPEN MODAL: populate prepared dropdown ── */
+  function openConsumedModal(){
+    document.getElementById('cEditId').value='';
+    document.getElementById('cName').value='';
+    document.getElementById('cName').style.display='none';
+    document.getElementById('cPrep').value='';
+    document.getElementById('cCons').value='';
+    document.getElementById('cStudents').value='';
+    document.getElementById('cDate').value=todayC();
+    populatePreparedDropdownC();
+    document.getElementById('addModal').classList.add('open');
+  }
+
+  function populatePreparedDropdownC(){
+    const sel=document.getElementById('cNameSelect');
+    const today=todayC();
+    const items=FoodDB.prepared.getAll().filter(r=>r.date===today);
+    sel.innerHTML='<option value="">— Select from today\'s prepared —</option>';
+    if(items.length){
+      items.forEach(r=>{
+        const opt=document.createElement('option');
+        opt.value=r.id;
+        opt.textContent=`${r.name} — ${r.meal||''} (${r.qty} kg)`;
+        opt.dataset.name=r.name;
+        opt.dataset.meal=r.meal||'Breakfast';
+        opt.dataset.qty=r.qty;
+        sel.appendChild(opt);
+      });
+    }
+    const manual=document.createElement('option');
+    manual.value='__manual__';
+    manual.textContent='✏️ Type manually...';
+    sel.appendChild(manual);
+    sel.value='';
+    document.getElementById('cName').style.display='none';
+  }
+
+  function onPrepSelectC(sel){
+    const opt=sel.options[sel.selectedIndex];
+    const manualInput=document.getElementById('cName');
+    if(opt.value==='__manual__'){
+      manualInput.style.display='';
+      manualInput.focus();
+      document.getElementById('cPrep').value='';
+    } else if(opt.value){
+      manualInput.style.display='none';
+      manualInput.value=opt.dataset.name||'';
+      document.getElementById('cMeal').value=opt.dataset.meal||'Breakfast';
+      document.getElementById('cPrep').value=opt.dataset.qty||'';
+      document.getElementById('cPrep').focus();
+    } else {
+      manualInput.style.display='none';
+    }
+  }
+
+  /* ── PERIOD FILTER ── */
+  function setPeriod(el){
+    document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    renderTableC();
+  }
+
+  /* ── SAVE (Add/Edit) ── */
+  function saveEntry(){
+    const sel=document.getElementById('cNameSelect');
+    const manualInput=document.getElementById('cName');
+    const n=(sel.value==='__manual__'||!sel.value)
+      ? manualInput.value.trim()
+      : (sel.options[sel.selectedIndex]?.dataset?.name||manualInput.value.trim());
+    const p=parseFloat(document.getElementById('cPrep').value);
+    const c=parseFloat(document.getElementById('cCons').value);
+    const s=parseInt(document.getElementById('cStudents').value)||0;
+    const m=document.getElementById('cMeal').value||'Breakfast';
+    const d=document.getElementById('cDate')?.value||todayC();
+    if(!n){alert('Please enter or select a food item.');return;}
+    if(!p||p<=0){alert('Please enter a valid prepared quantity.');return;}
+    if(c===undefined||isNaN(c)){alert('Please enter consumed quantity.');return;}
+    const payload={name:n,meal:m,preparedKg:p,consumedKg:c,students:s,date:d};
+    const eid=document.getElementById('cEditId')?.value||'';
+    if(eid){FoodDB.consumed.update(eid,payload);toastC('✏️ "'+n+'" updated');}
+    else{FoodDB.consumed.add(payload);toastC('✅ "'+n+'" consumption logged');}
+    document.getElementById('addModal').classList.remove('open');
+    renderTableC();
+  }
+
+  /* ── EXPORT CSV ── */
+  function exportCSV(){
+    const rows=FoodDB.consumed.getAll();
+    const lines=[['Name','Meal','Prepared(kg)','Consumed(kg)','Students','Date'].join(','),
+      ...rows.map(r=>[r.name,r.meal,r.preparedKg,r.consumedKg,r.students||0,r.date].map(c=>`"${c}"`).join(','))];
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(lines.join('\n'));
+    a.download='consumed_'+todayC()+'.csv';a.click();
+    toastC('📥 CSV exported');
+  }
+
+  /* ── init ── */
+  (function(){
+    const all=FoodDB.consumed.getAll();
+
+    // Month stat
+    const monthStr=new Date().toISOString().slice(0,7);
+    const monthStudents=all.filter(r=>(r.date||'').startsWith(monthStr)).reduce((s,r)=>s+parseInt(r.students||0),0);
+    document.getElementById('cStatMonth').textContent=monthStudents.toLocaleString();
+    document.getElementById('cStatMonthSub').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>Students this month';
+
+    // Weekly chart
+    const labels=[],dConsumed=[],dPrepared=[];
+    for(let i=6;i>=0;i--){
+      const d=new Date();d.setDate(d.getDate()-i);
+      const ds=d.toISOString().slice(0,10);
+      const dayRows=all.filter(r=>r.date===ds);
+      labels.push(d.toLocaleDateString('en-IN',{weekday:'short'}));
+      dConsumed.push(dayRows.reduce((s,r)=>s+parseFloat(r.consumedKg||0),0));
+      dPrepared.push(dayRows.reduce((s,r)=>s+parseFloat(r.preparedKg||0),0));
+    }
+    weekChartC=new Chart(document.getElementById('weekChart').getContext('2d'),{
+      type:'bar',data:{labels,datasets:[
+        {label:'Consumed',data:dConsumed,backgroundColor:'#1D9E75',borderRadius:4,borderSkipped:false},
+        {label:'Prepared',data:dPrepared,backgroundColor:'#B5D4F4',borderRadius:4,borderSkipped:false}
+      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{color:'#6b7c74',font:{size:11}}},
+                y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{color:'#6b7c74',font:{size:11}},beginAtZero:true}}}
+    });
+
+    // Donut
+    const todayRows=all.filter(r=>r.date===todayC());
+    const tc=todayRows.reduce((s,r)=>s+parseFloat(r.consumedKg||0),0);
+    const tp=todayRows.reduce((s,r)=>s+parseFloat(r.preparedKg||0),0);
+    const consP=tp>0?Math.round(tc/tp*100):0;
+    const wasteP=100-consP;
+    donutChartC=new Chart(document.getElementById('donutChart').getContext('2d'),{
+      type:'doughnut',
+      data:{labels:['Consumed','Waste'],datasets:[{data:tp>0?[consP,wasteP]:[0,100],backgroundColor:['#1D9E75','#F09595'],borderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false}}}
+    });
+    updateDonutLegend(consP,wasteP);
+
+    renderTableC();
+  })();
+</script>
+
+<!-- TOAST -->
+<div style="position:fixed;bottom:24px;right:24px;background:#0d2b22;color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(70px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none" id="cToast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="cToastMsg">Saved</span>
+</div>
+</body>
+</html>

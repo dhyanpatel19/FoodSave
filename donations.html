@@ -1,0 +1,637 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donations — FoodSave</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="db.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="mobile.css">
+<script src="settings-sync.js"></script>
+<script src="mobile.js" defer></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --sidebar-bg:#0d2b22;--accent:#1D9E75;--accent-dark:#0F6E56;--accent-light:#E1F5EE;
+    --page-bg:#f0f4f2;--card-bg:#ffffff;--border:#e5eae7;
+    --text-primary:#0d2b22;--text-secondary:#6b7c74;--text-muted:#9baaa2;
+    --danger:#E24B4A;--danger-light:#FCEBEB;--warning:#BA7517;--warning-light:#FAEEDA;
+    --info:#185FA5;--info-light:#E6F1FB;--purple:#534AB7;--purple-light:#EEEDFE;
+    --font:'Plus Jakarta Sans',sans-serif;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--sidebar-width:230px;
+  }
+  body{font-family:var(--font);background:var(--page-bg);color:var(--text-primary);display:flex;min-height:100vh;font-size:14px}
+  .sidebar{width:var(--sidebar-width);min-width:var(--sidebar-width);background:var(--sidebar-bg);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .logo{display:flex;align-items:center;gap:10px;padding:22px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .logo-icon{width:34px;height:34px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo-icon svg{width:18px;height:18px}
+  .logo-text{font-size:15px;font-weight:600;color:#fff;letter-spacing:-.2px}
+  .nav{padding:16px 0;flex:1}
+  .nav-section{font-size:10px;color:rgba(255,255,255,.3);padding:14px 20px 6px;text-transform:uppercase;letter-spacing:.1em;font-weight:500}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;border-left:3px solid transparent;text-decoration:none}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0}
+  .nav-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9)}
+  .nav-item.active{background:rgba(29,158,117,.15);color:var(--accent);border-left:3px solid var(--accent);font-weight:500}
+  .sidebar-bottom{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+  .user-row{display:flex;align-items:center;gap:10px}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
+  .user-name{font-size:12px;font-weight:600;color:#fff}
+  .user-role{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{background:var(--card-bg);border-bottom:1px solid var(--border);padding:0 28px;height:62px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10}
+  .topbar-title{flex:1}
+  .topbar-title h1{font-size:17px;font-weight:600;color:var(--text-primary)}
+  .topbar-title p{font-size:12px;color:var(--text-secondary);margin-top:1px}
+  .btn-primary{display:flex;align-items:center;gap:6px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 16px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;transition:background .15s}
+  .btn-primary:hover{background:var(--accent-dark)}
+  .btn-primary svg{width:14px;height:14px}
+  .btn-outline{display:flex;align-items:center;gap:6px;background:var(--card-bg);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 14px;font-size:13px;font-family:var(--font);cursor:pointer;transition:all .15s}
+  .btn-outline:hover{background:var(--page-bg);color:var(--text-primary)}
+  .btn-outline svg{width:14px;height:14px}
+  .content{flex:1;padding:24px 28px;display:flex;flex-direction:column;gap:20px}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .stat-card{background:var(--card-bg);border-radius:var(--radius-lg);border:1px solid var(--border);padding:18px 20px;display:flex;align-items:center;justify-content:space-between}
+  .stat-label{font-size:11px;color:var(--text-secondary);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+  .stat-value{font-size:24px;font-weight:600;color:var(--text-primary);line-height:1}
+  .stat-change{display:flex;align-items:center;gap:4px;font-size:11px;margin-top:5px}
+  .stat-change svg{width:11px;height:11px}
+  .change-up{color:var(--accent-dark)}
+  .stat-icon{width:48px;height:48px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .stat-icon svg{width:22px;height:22px}
+  .ic-green{background:var(--accent-light)}
+  .ic-purple{background:var(--purple-light)}
+  .ic-blue{background:var(--info-light)}
+  .ic-amber{background:var(--warning-light)}
+  .main-grid{display:grid;grid-template-columns:1fr 300px;gap:18px}
+  .card{background:var(--card-bg);border-radius:var(--radius-lg);border:1px solid var(--border);padding:20px 22px}
+  .card-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+  .card-sub{font-size:12px;color:var(--text-secondary);margin-top:2px}
+  .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+  td{padding:12px 12px;font-size:13px;color:var(--text-primary);border-bottom:1px solid #f5f7f6;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover td{background:#fafcfb}
+  .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .badge-green{background:var(--accent-light);color:var(--accent-dark)}
+  .badge-amber{background:var(--warning-light);color:#854F0B}
+  .badge-red{background:var(--danger-light);color:#A32D2D}
+  .badge-blue{background:var(--info-light);color:#0C447C}
+  .badge-purple{background:var(--purple-light);color:#3C3489}
+  .ftab{padding:5px 13px;border-radius:20px;font-size:12px;font-family:var(--font);cursor:pointer;border:1px solid var(--border);background:var(--card-bg);color:var(--text-secondary);transition:all .15s}
+  .ftab.active{background:var(--sidebar-bg);color:#fff;border-color:var(--sidebar-bg);font-weight:500}
+  .ftab:not(.active):hover{background:var(--page-bg)}
+  /* NGO CARDS */
+  .ngo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ngo-card{border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;transition:all .15s;cursor:pointer}
+  .ngo-card:hover{border-color:var(--accent);background:#fafcfb}
+  .ngo-card.selected{border-color:var(--accent);background:var(--accent-light)}
+  .ngo-avatar{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:8px}
+  .ngo-name{font-size:13px;font-weight:600;color:var(--text-primary)}
+  .ngo-type{font-size:11px;color:var(--text-muted);margin-top:2px}
+  .ngo-meta{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+  .ngo-distance{font-size:11px;color:var(--text-secondary)}
+  .ngo-status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+  /* NOTIFY PANEL */
+  .notify-panel{background:#f7fdf9;border:1px solid #9FE1CB;border-radius:var(--radius-lg);padding:20px}
+  .notify-title{font-size:14px;font-weight:600;color:var(--accent-dark);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .notify-title svg{width:16px;height:16px}
+  .form-group{margin-bottom:12px}
+  .form-label{font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;display:block}
+  .form-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);color:var(--text-primary);outline:none;transition:border .15s;background:#fff}
+  .form-input:focus{border-color:var(--accent)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn-notify{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s}
+  .btn-notify:hover{background:var(--accent-dark)}
+  .btn-notify svg{width:14px;height:14px}
+  /* SUCCESS TOAST */
+  .toast{position:fixed;bottom:28px;right:28px;background:#0d2b22;color:#fff;padding:14px 20px;border-radius:var(--radius-md);font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:all .3s;z-index:200}
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast svg{width:16px;height:16px;color:var(--accent);flex-shrink:0}
+  /* ACTIVITY TABLE */
+  .action-link{color:var(--accent);font-size:12px;font-weight:500;cursor:pointer;background:none;border:none;font-family:var(--font);padding:0;text-decoration:none}
+  .action-link:hover{text-decoration:underline}
+  .action-link.del{color:var(--danger)}
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:var(--radius-lg);padding:28px;width:480px;max-width:95vw}
+  .modal-title{font-size:16px;font-weight:600;margin-bottom:4px}
+  .modal-sub{font-size:13px;color:var(--text-secondary);margin-bottom:20px}
+  .modal-actions{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+  .btn-cancel{padding:9px 18px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;font-size:13px;font-family:var(--font);cursor:pointer;color:var(--text-secondary)}
+  .btn-save{padding:9px 20px;border:none;border-radius:var(--radius-sm);background:var(--accent);color:#fff;font-size:13px;font-family:var(--font);font-weight:500;cursor:pointer}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#c8d4cf;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="sidebar" id="mainSidebar">
+  <div class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="#fff" stroke="none"/></svg></div>
+    <span class="logo-text">FoodSave</span>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Main Menu</div>
+    <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a href="prepared.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a7 7 0 017 7H5a7 7 0 017-7z"/><rect x="3" y="9" width="18" height="3" rx="1"/><path d="M8 12v8M16 12v8M5 20h14"/></svg>Prepared Food</a>
+    <a href="consumed.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Consumed Food</a>
+    <a href="waste.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Waste Food</a>
+    <div class="nav-section">Actions</div>
+    <a href="donations.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>Donations</a>
+    <a href="reports.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Reports</a>
+    <a href="settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</a>
+  </div>
+  <div class="sidebar-bottom"><div class="user-row"><div class="avatar">RC</div><div><div class="user-name">Rahul Chauhan</div><div class="user-role">Canteen Manager</div></div></div></div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="main">
+  <div class="topbar">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="topbar-title">
+      <h1>Donations</h1>
+      <p>Send surplus food to NGO partners and track all donation activity</p>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-outline" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+      </button>
+      <button class="btn-primary" onclick="document.getElementById('addNgoModal').classList.add('open')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add NGO Partner
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div><div class="stat-label">Total donated this month</div><div class="stat-value" style="color:var(--accent)" id="dStatTotal">—</div><div class="stat-change change-up" id="dStatTotalSub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>Loading…</div></div>
+        <div class="stat-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <div><div class="stat-label">Active NGO partners</div><div class="stat-value" id="dStatNGOs">—</div><div class="stat-change change-up" id="dStatNGOsSub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>Loading…</div></div>
+        <div class="stat-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="#534AB7" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <div><div class="stat-label">Donations this month</div><div class="stat-value" id="dStatCount">—</div><div class="stat-change" style="color:var(--text-muted)" id="dStatCountSub">Loading…</div></div>
+        <div class="stat-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      </div>
+      <div class="stat-card">
+        <div><div class="stat-label">Pending pickup</div><div class="stat-value" style="color:var(--warning)" id="dStatPending">—</div><div class="stat-change" style="color:var(--warning)" id="dStatPendingSub">Loading…</div></div>
+        <div class="stat-icon ic-amber"><svg viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div style="display:flex;flex-direction:column;gap:16px">
+
+        <!-- NGO DIRECTORY -->
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">NGO partner directory</div><div class="card-sub">Click an NGO to select for notification</div></div>
+            <span id="selectedLabel" style="font-size:12px;color:var(--accent);font-weight:500"></span>
+          </div>
+          <div class="ngo-grid">
+            <div class="ngo-card" onclick="selectNGO(this,'Annapurna Shelter','+91 98765 00001')" data-name="Annapurna Shelter" data-phone="+91 98765 00001">
+              <div class="ngo-avatar" style="background:#E1F5EE">🏠</div>
+              <div class="ngo-name">Annapurna Shelter</div>
+              <div class="ngo-type">Homeless shelter</div>
+              <div class="ngo-meta">
+                <span class="ngo-distance">1.2 km away</span>
+                <span style="font-size:11px;font-weight:500;color:var(--accent-dark)"><span class="ngo-status-dot" style="background:var(--accent)"></span>Active</span>
+              </div>
+            </div>
+            <div class="ngo-card" onclick="selectNGO(this,'Seva Food Bank','+91 98765 00002')" data-name="Seva Food Bank" data-phone="+91 98765 00002">
+              <div class="ngo-avatar" style="background:#FAEEDA">🏦</div>
+              <div class="ngo-name">Seva Food Bank</div>
+              <div class="ngo-type">Community food bank</div>
+              <div class="ngo-meta">
+                <span class="ngo-distance">0.8 km away</span>
+                <span style="font-size:11px;font-weight:500;color:var(--accent-dark)"><span class="ngo-status-dot" style="background:var(--accent)"></span>Active</span>
+              </div>
+            </div>
+            <div class="ngo-card" onclick="selectNGO(this,'Community Kitchen','+91 98765 00003')" data-name="Community Kitchen" data-phone="+91 98765 00003">
+              <div class="ngo-avatar" style="background:#E6F1FB">🍳</div>
+              <div class="ngo-name">Community Kitchen</div>
+              <div class="ngo-type">Free meals program</div>
+              <div class="ngo-meta">
+                <span class="ngo-distance">2.1 km away</span>
+                <span style="font-size:11px;font-weight:500;color:var(--accent-dark)"><span class="ngo-status-dot" style="background:var(--accent)"></span>Active</span>
+              </div>
+            </div>
+            <div class="ngo-card" onclick="selectNGO(this,'Robin Hood Army','+91 98765 00004')" data-name="Robin Hood Army" data-phone="+91 98765 00004">
+              <div class="ngo-avatar" style="background:#EEEDFE">🏹</div>
+              <div class="ngo-name">Robin Hood Army</div>
+              <div class="ngo-type">Volunteer network</div>
+              <div class="ngo-meta">
+                <span class="ngo-distance">3.5 km away</span>
+                <span style="font-size:11px;font-weight:500;color:var(--accent-dark)"><span class="ngo-status-dot" style="background:var(--accent)"></span>Active</span>
+              </div>
+            </div>
+            <div class="ngo-card" onclick="selectNGO(this,'Akshaya Patra','1800 425 8585')" data-name="Akshaya Patra" data-phone="1800 425 8585">
+              <div class="ngo-avatar" style="background:#EAF3DE">🌿</div>
+              <div class="ngo-name">Akshaya Patra</div>
+              <div class="ngo-type">Mid-day meal scheme</div>
+              <div class="ngo-meta">
+                <span class="ngo-distance">4.8 km away</span>
+                <span style="font-size:11px;font-weight:500;color:var(--accent-dark)"><span class="ngo-status-dot" style="background:var(--accent)"></span>Active</span>
+              </div>
+            </div>
+            <div class="ngo-card" onclick="selectNGO(this,'Goonj NGO','+91 11 4141 6564')" data-name="Goonj NGO" data-phone="+91 11 4141 6564">
+              <div class="ngo-avatar" style="background:#FCEBEB">🤝</div>
+              <div class="ngo-name">Goonj NGO</div>
+              <div class="ngo-type">Relief organisation</div>
+              <div class="ngo-meta">
+                <span class="ngo-distance">6.2 km away</span>
+                <span style="font-size:11px;font-weight:500;color:#854F0B"><span class="ngo-status-dot" style="background:#EF9F27"></span>Away</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DONATION ACTIVITY TABLE -->
+        <div class="card" style="padding:0 0 4px">
+          <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div><div class="card-title">Donation activity</div><div class="card-sub">All NGO pickups this month</div></div>
+            <div style="display:flex;gap:6px">
+              <button class="ftab active" onclick="filterDon('all',this)">All</button>
+              <button class="ftab" onclick="filterDon('Complete',this)">Complete</button>
+              <button class="ftab" onclick="filterDon('Pending',this)">Pending</button>
+              <button class="ftab" onclick="filterDon('Cancelled',this)">Cancelled</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="padding-left:22px">Date</th>
+                <th>NGO / Recipient</th>
+                <th>Food items</th>
+                <th>Status</th>
+                <th>Amount</th>
+                <th>Contact</th>
+                <th style="padding-right:22px"></th>
+              </tr>
+            </thead>
+            <tbody id="donTable">
+              <tr><td colspan="7" style="text-align:center;padding:28px;color:#9baaa2">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- MONTHLY CHART -->
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">Monthly donation trend</div><div class="card-sub">kg donated per week</div></div></div>
+          <div style="position:relative;width:100%;height:160px"><canvas id="donChart" role="img" aria-label="Bar chart of food donated per week">Donation trend data.</canvas></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: NOTIFY PANEL -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="notify-panel">
+          <div class="notify-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.81 19.79 19.79 0 01.5 2.27a2 2 0 012-2.18h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 6.91a16 16 0 006.18 6.18l.38-.38a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+            Send NGO Notification
+          </div>
+          <div id="selectedNgoInfo" style="background:#fff;border:1px solid #9FE1CB;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--accent-dark)">
+            Select an NGO from the directory above to notify
+          </div>
+          <div class="form-group">
+            <label class="form-label">Surplus food available</label>
+            <input class="form-input" id="notifFood" placeholder="e.g. Rice, Dal, Roti — 38 kg">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Quantity (kg)</label>
+              <input class="form-input" id="notifQty" type="number" placeholder="0" min="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Pickup time</label>
+              <input class="form-input" type="time" id="notifTime" value="18:00">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pickup date</label>
+            <input class="form-input" type="date" id="notifDate">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Special instructions</label>
+            <input class="form-input" id="notifNote" placeholder="Handling notes, entry gate info...">
+          </div>
+          <button class="btn-notify" onclick="sendNotification()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Send notification to NGO
+          </button>
+        </div>
+
+        <!-- DONATION PIE -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">Donations by NGO</div>
+          <div style="position:relative;width:100%;height:150px"><canvas id="donPie" role="img" aria-label="Pie chart of donations by NGO">NGO donation share.</canvas></div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">
+            <div id="pieLegend" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div>
+          </div>
+        </div>
+
+        <!-- IMPACT BOX -->
+        <div style="background:#0d2b22;border-radius:var(--radius-lg);padding:18px 20px;color:#fff">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px;color:#9FE1CB">This month's impact</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:rgba(255,255,255,.6)">Food saved from waste</span><span style="font-weight:600;color:#5DCAA5" id="impactKg">—</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:rgba(255,255,255,.6)">People fed</span><span style="font-weight:600;color:#5DCAA5" id="impactPeople">—</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:rgba(255,255,255,.6)">CO₂ saved</span><span style="font-weight:600;color:#5DCAA5" id="impactCO2">—</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:rgba(255,255,255,.6)">Estimated value</span><span style="font-weight:600;color:#5DCAA5" id="impactValue">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD NGO MODAL -->
+<div class="modal-overlay" id="addNgoModal" onclick="if(event.target.id==='addNgoModal')this.classList.remove('open')">
+  <div class="modal">
+    <div class="modal-title">Add NGO partner</div>
+    <div class="modal-sub">Register a new NGO to receive food donations</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;display:block">NGO name *</label><input style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);outline:none" id="ngoName" placeholder="Organisation name"></div>
+      <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;display:block">Type</label><select style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);outline:none;background:#fff"><option>Food bank</option><option>Shelter</option><option>Community kitchen</option><option>Volunteer network</option><option>Other</option></select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;display:block">Phone *</label><input style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);outline:none" id="ngoPhone" placeholder="+91 XXXXX XXXXX"></div>
+      <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;display:block">Email</label><input style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);outline:none" id="ngoEmail" placeholder="contact@ngo.org"></div>
+    </div>
+    <div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:4px;display:block">Address</label><input style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font);outline:none" id="ngoAddr" placeholder="Full address..."></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="document.getElementById('addNgoModal').classList.remove('open')">Cancel</button>
+      <button class="btn-save" onclick="addNgo()">Add NGO partner</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg">Notification sent!</span>
+</div>
+
+<script>
+  /* ============================================================
+     DONATIONS — Full FoodDB localStorage integration
+  ============================================================ */
+  let selectedNGO = null, selectedPhone = null;
+  let donBarChart, donPieChart;
+  const PIE_COLORS = ['#1D9E75','#185FA5','#EF9F27','#534AB7','#E24B4A','#BA7517'];
+
+  /* ── helpers ── */
+  const today = () => new Date().toISOString().slice(0,10);
+  const monthStart = () => today().slice(0,7);
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  /* ── ROW BUILDER ── */
+  function buildRow(r) {
+    const badge = r.status==='Complete'
+      ? '<span class="badge badge-green">Complete</span>'
+      : r.status==='Cancelled'
+        ? '<span class="badge badge-red">Cancelled</span>'
+        : '<span class="badge badge-amber">Pending</span>';
+    const delBtn = `<button class="action-link del" style="color:var(--danger);margin-left:4px" onclick="deleteDon('${r.id}',this)">🗑 Delete</button>`;
+    const actions = r.status==='Pending'
+      ? `<button class="action-link" onclick="markComplete('${r.id}',this)">Mark complete</button>
+         <button class="action-link del" style="color:var(--danger);margin-left:6px" onclick="cancelDon('${r.id}',this)">Cancel</button>
+         ${delBtn}`
+      : `<button class="action-link" onclick="resendNotif('${r.ngo||''}')">📤 Resend</button>${delBtn}`;
+    return `<td style="padding-left:22px">${r.scheduledDate||r.date||'—'}</td>
+      <td style="font-weight:500">${r.ngo||'—'}</td>
+      <td style="color:var(--text-secondary);font-size:12px">${r.items||'—'}</td>
+      <td>${badge}</td>
+      <td style="font-weight:500">${parseFloat(r.qty||0).toFixed(1)} kg</td>
+      <td style="font-size:12px;color:var(--text-secondary)">${r.contact||'—'}</td>
+      <td style="padding-right:22px">${actions}</td>`;
+  }
+
+  /* ── MAIN INIT ── */
+  function initDonations() {
+    const all   = FoodDB.donations.getAll();
+    const month = monthStart();
+    const mDons = all.filter(r => (r.scheduledDate||r.date||'').startsWith(month));
+
+    const totalKg   = mDons.reduce((s,r)=>s+parseFloat(r.qty||0),0);
+    const ngoSet    = new Set(mDons.map(r=>r.ngo).filter(Boolean));
+    const completed = mDons.filter(r=>r.status==='Complete');
+    const pending   = mDons.filter(r=>r.status==='Pending');
+    const pendingKg = pending.reduce((s,r)=>s+parseFloat(r.qty||0),0);
+
+    /* ── 1. STAT CARDS ── */
+    document.getElementById('dStatTotal').textContent    = totalKg.toFixed(0)+' kg';
+    document.getElementById('dStatTotalSub').innerHTML   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>${mDons.length} donation${mDons.length!==1?'s':''} logged`;
+    document.getElementById('dStatNGOs').textContent     = ngoSet.size || '—';
+    document.getElementById('dStatNGOsSub').innerHTML    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>${ngoSet.size} unique partner${ngoSet.size!==1?'s':''}`;
+    document.getElementById('dStatCount').textContent    = completed.length;
+    document.getElementById('dStatCountSub').textContent = completed.length+' successful pickup'+(completed.length!==1?'s':'');
+    document.getElementById('dStatPending').textContent  = pendingKg.toFixed(0)+' kg';
+    document.getElementById('dStatPendingSub').textContent = pending.length+' pickup'+(pending.length!==1?'s':'')+' awaiting';
+
+    /* ── 2. ACTIVITY TABLE ── */
+    renderTable(all);
+
+    /* ── 3. TREND CHART (last 4 weeks) ── */
+    const wLabels=[], wData=[];
+    for(let w=3;w>=0;w--){
+      const wStart=new Date(); wStart.setDate(wStart.getDate()-w*7-6);
+      const wEnd=new Date();   wEnd.setDate(wEnd.getDate()-w*7);
+      const ws=wStart.toISOString().slice(0,10);
+      const we=wEnd.toISOString().slice(0,10);
+      const wkg=all.filter(r=>(r.scheduledDate||r.date||'')>=ws&&(r.scheduledDate||r.date||'')<=we)
+                   .reduce((s,r)=>s+parseFloat(r.qty||0),0);
+      wLabels.push('Week '+(4-w));
+      wData.push(parseFloat(wkg.toFixed(1)));
+    }
+    if(donBarChart) donBarChart.destroy();
+    donBarChart = new Chart(document.getElementById('donChart').getContext('2d'),{
+      type:'bar',
+      data:{labels:wLabels,datasets:[{label:'Donated (kg)',data:wData,
+        backgroundColor:'#E1F5EE',borderColor:'#1D9E75',borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{color:'#6b7c74',font:{size:11}}},
+                y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{color:'#6b7c74',font:{size:11}},beginAtZero:true}}}
+    });
+
+    /* ── 4. PIE CHART + LEGEND (by NGO) ── */
+    const ngoTotals={};
+    all.forEach(r=>{ if(r.ngo) ngoTotals[r.ngo]=(ngoTotals[r.ngo]||0)+parseFloat(r.qty||0); });
+    const topNGOs=Object.entries(ngoTotals).sort((a,b)=>b[1]-a[1]);
+    const top3=topNGOs.slice(0,3);
+    const otherKg=topNGOs.slice(3).reduce((s,[,v])=>s+v,0);
+    const pieLabels=top3.map(([k])=>k); if(otherKg>0) pieLabels.push('Others');
+    const pieData=top3.map(([,v])=>parseFloat(v.toFixed(1))); if(otherKg>0) pieData.push(parseFloat(otherKg.toFixed(1)));
+    if(donPieChart) donPieChart.destroy();
+    donPieChart = new Chart(document.getElementById('donPie').getContext('2d'),{
+      type:'doughnut',
+      data:{labels:pieLabels,datasets:[{data:pieData,
+        backgroundColor:PIE_COLORS.slice(0,pieLabels.length),borderWidth:0,hoverOffset:4}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false}}}
+    });
+    // Legend
+    const legEl=document.getElementById('pieLegend');
+    legEl.innerHTML=pieLabels.map((lbl,i)=>
+      `<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">
+        <span style="display:flex;align-items:center;gap:5px">
+          <span style="width:10px;height:10px;border-radius:2px;background:${PIE_COLORS[i]};display:inline-block"></span>${lbl}
+        </span><span style="font-weight:600">${pieData[i]} kg</span>
+      </div>`
+    ).join('') || '<span style="font-size:12px;color:#9baaa2">No data yet</span>';
+
+    /* ── 5. IMPACT BOX ── */
+    const totalAllKg = all.reduce((s,r)=>s+parseFloat(r.qty||0),0);
+    document.getElementById('impactKg').textContent    = totalAllKg.toFixed(0)+' kg';
+    document.getElementById('impactPeople').textContent= '~'+Math.round(totalAllKg*2.5);
+    document.getElementById('impactCO2').textContent   = (totalAllKg*2).toFixed(0)+' kg';
+    document.getElementById('impactValue').textContent = '₹'+Math.round(totalAllKg*100).toLocaleString();
+  }
+
+  /* ── RENDER TABLE ── */
+  function renderTable(all) {
+    const tbody = document.getElementById('donTable');
+    const sorted = [...all].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    if(!sorted.length){
+      tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:28px;color:#9baaa2">No donation records yet. Select an NGO and send a notification to get started.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = sorted.map(r=>{
+      const tr=document.createElement('tr');
+      tr.dataset.status=r.status||'Pending';
+      tr.dataset.id=r.id;
+      tr.innerHTML=buildRow(r);
+      return tr.outerHTML;
+    }).join('');
+  }
+
+  /* ── NGO SELECT ── */
+  function selectNGO(el, name, phone) {
+    document.querySelectorAll('.ngo-card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedNGO=name; selectedPhone=phone;
+    document.getElementById('selectedNgoInfo').innerHTML=`<strong>${name}</strong> selected &nbsp;·&nbsp; ${phone}`;
+    document.getElementById('selectedLabel').textContent=name+' selected';
+  }
+
+  /* ── SEND NOTIFICATION ── */
+  function sendNotification() {
+    if(!selectedNGO){alert('Please select an NGO from the directory first.');return;}
+    const food=document.getElementById('notifFood').value.trim();
+    const qty=parseFloat(document.getElementById('notifQty').value);
+    const time=document.getElementById('notifTime').value;
+    const date=document.getElementById('notifDate').value||today();
+    const note=document.getElementById('notifNote').value.trim();
+    if(!food||!qty||qty<=0){alert('Please fill in food details and a valid quantity.');return;}
+
+    const record=FoodDB.donations.add({
+      ngo:selectedNGO, contact:selectedPhone,
+      items:food, qty, scheduledDate:date,
+      pickupTime:time, notes:note,
+      status:'Pending', date:today()
+    });
+
+    // prepend to table
+    const tbody=document.getElementById('donTable');
+    if(tbody.querySelector('td[colspan]')) tbody.innerHTML='';
+    const tr=document.createElement('tr');
+    tr.dataset.status='Pending'; tr.dataset.id=record.id;
+    tr.innerHTML=buildRow(record);
+    tbody.prepend(tr);
+
+    showToast(`✅ Notification sent to ${selectedNGO}! Pickup: ${date} at ${time}`);
+    document.getElementById('notifFood').value='';
+    document.getElementById('notifQty').value='';
+    document.getElementById('notifNote').value='';
+
+    // refresh stats + charts quietly
+    initDonations();
+  }
+
+  /* ── MARK COMPLETE ── */
+  function markComplete(id, btn) {
+    FoodDB.donations.update(id,{status:'Complete'});
+    const row=btn.closest('tr');
+    row.dataset.status='Complete';
+    row.querySelector('td:nth-child(4)').innerHTML='<span class="badge badge-green">Complete</span>';
+    btn.parentElement.innerHTML='<button class="action-link" onclick="resendNotif(this.closest(\'tr\').querySelector(\'td:nth-child(2)\').textContent)">Resend</button>';
+    showToast('✅ Donation marked as complete');
+    initDonations();
+  }
+
+  /* ── CANCEL DONATION ── */
+  function cancelDon(id, btn) {
+    if(!confirm('Cancel this donation?')) return;
+    FoodDB.donations.update(id,{status:'Cancelled'});
+    const row=btn.closest('tr');
+    row.dataset.status='Cancelled';
+    row.querySelector('td:nth-child(4)').innerHTML='<span class="badge badge-red">Cancelled</span>';
+    btn.parentElement.innerHTML='—';
+    showToast('🗑 Donation cancelled');
+    initDonations();
+  }
+
+  /* ── DELETE DONATION ── */
+  function deleteDon(id, btn) {
+    const row = btn.closest('tr');
+    const ngo = row.querySelector('td:nth-child(2)')?.textContent?.trim() || 'this entry';
+    if (!confirm(`Permanently delete the donation record for "${ngo}"?`)) return;
+    FoodDB.donations.delete(id);
+    row.remove();
+    showToast('🗑️ Donation record deleted');
+    initDonations();
+  }
+
+  function resendNotif(ngo){showToast(`📤 Notification resent to ${ngo}!`);}
+
+  /* ── FILTER TABLE ── */
+  function filterDon(status,btn){
+    document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#donTable tr').forEach(row=>{
+      row.style.display=(status==='all'||row.dataset.status===status)?'':' none';
+    });
+  }
+
+  /* ── ADD NGO PARTNER ── */
+  function addNgo(){
+    const name=document.getElementById('ngoName').value.trim();
+    const phone=document.getElementById('ngoPhone').value.trim();
+    if(!name||!phone){alert('Name and phone are required.');return;}
+    showToast(`🤝 ${name} added as NGO partner!`);
+    document.getElementById('addNgoModal').classList.remove('open');
+    document.getElementById('ngoName').value='';
+    document.getElementById('ngoPhone').value='';
+  }
+
+  /* ── EXPORT CSV ── */
+  function exportCSV(){
+    const rows=FoodDB.donations.getAll();
+    if(!rows.length){showToast('No records to export');return;}
+    const lines=[['Date','NGO','Items','Qty(kg)','Status','Contact','Scheduled Date','Pickup Time'].join(','),
+      ...rows.map(r=>[r.date||'',r.ngo||'',r.items||'',r.qty||0,r.status||'',r.contact||'',r.scheduledDate||'',r.pickupTime||''].map(c=>`"${c}"`).join(','))];
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(lines.join('\n'));
+    a.download='donations_'+today()+'.csv'; a.click();
+    showToast('📥 CSV exported ('+rows.length+' records)');
+  }
+
+  /* ── SET TODAY AS DEFAULT DATE ── */
+  document.getElementById('notifDate').value = today();
+
+  /* ── RUN ON LOAD ── */
+  initDonations();
+</script>
+</body>
+</html>

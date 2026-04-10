@@ -1,0 +1,337 @@
+/* ═══════════════════════════════════════════
+   FOODSAVE — SHARED MOBILE RESPONSIVE STYLES
+   ═══════════════════════════════════════════ */
+
+/* ── HAMBURGER BUTTON (hidden on desktop) ── */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  transition: background .15s;
+  z-index: 120;
+}
+.hamburger:hover { background: var(--page-bg, #f0f4f2); }
+.hamburger span {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text-primary, #0d2b22);
+  transition: all .25s cubic-bezier(.4,0,.2,1);
+  transform-origin: center;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── SIDEBAR OVERLAY (mobile backdrop) ── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 108;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: fadeInOverlay .2s ease;
+}
+.sidebar-overlay.open { display: block; }
+@keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── MOBILE TOPBAR BACK-BUTTON AREA ── */
+.mobile-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ══════════════════════════════════════════
+   BREAKPOINT: Tablet & Mobile (≤ 900px)
+══════════════════════════════════════════ */
+@media (max-width: 900px) {
+
+  /* Show hamburger */
+  .hamburger { display: flex; }
+
+  /* Sidebar becomes slide-in overlay */
+  .sidebar {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    height: 100vh !important;
+    z-index: 110;
+    transform: translateX(-100%);
+    transition: transform .28s cubic-bezier(.4,0,.2,1);
+    box-shadow: 4px 0 24px rgba(0,0,0,.18);
+    width: 240px !important;
+    min-width: 240px !important;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Main content takes full width */
+  .main { width: 100%; }
+
+  /* Topbar adjustments */
+  .topbar {
+    padding: 0 16px !important;
+    gap: 10px;
+  }
+  .topbar-title h1 { font-size: 15px !important; }
+  .topbar-title p  { display: none; }
+
+  /* Content padding */
+  .content {
+    padding: 16px !important;
+    gap: 14px !important;
+  }
+
+  /* Stats grid: 2 columns on tablet */
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Main grid: stack vertically */
+  .main-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Right panel: horizontal scroll cards on mobile */
+  .right-panel {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* Filter bar: wrap */
+  .filter-bar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px 14px !important;
+  }
+
+  /* Tables: horizontal scroll */
+  .card table { min-width: 600px; }
+  .card { overflow-x: auto; }
+
+  /* Alert banner: stack */
+  .alert-banner {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+/* ══════════════════════════════════════════
+   BREAKPOINT: Small Mobile (≤ 600px)
+══════════════════════════════════════════ */
+@media (max-width: 600px) {
+
+  .content { padding: 12px !important; }
+
+  /* Stats: single column */
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .stat-card {
+    padding: 14px 16px !important;
+  }
+  .stat-value { font-size: 18px !important; }
+
+  /* Right panel: single column */
+  .right-panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Topbar buttons: icon-only on very small screens */
+  .btn-outline .btn-label,
+  .btn-primary .btn-label {
+    display: none;
+  }
+
+  /* Modal full-screen */
+  .modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+    min-height: 60vh;
+  }
+  .modal-overlay {
+    align-items: flex-end !important;
+  }
+
+  /* Delete dialog */
+  .del-box {
+    width: 95vw !important;
+  }
+
+  /* Settings nav horizontal */
+  .settings-nav {
+    width: 100% !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    position: static !important;
+    gap: 4px !important;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .settings-nav::-webkit-scrollbar { display: none; }
+  .settings-nav-item {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+
+  /* Settings panels gap */
+  .settings-panels { gap: 14px !important; }
+
+  /* Form grid single column */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .form-row2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── SIDEBAR OPEN STATE (body lock) ── */
+body.sidebar-open {
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════
+   DARK MODE — Applied globally via body.dark-mode
+   Set by settings-sync.js from localStorage
+══════════════════════════════════════════ */
+body.dark-mode {
+  --page-bg:       #111b17;
+  --card-bg:       #1a2820;
+  --border:        #2a3d33;
+  --text-primary:  #e8f0eb;
+  --text-secondary:#8fa898;
+  --text-muted:    #5c7569;
+  --sidebar-bg:    #0a1f17;
+  --sidebar-hover: rgba(255,255,255,.06);
+  --sidebar-active-bg: rgba(29,158,117,.18);
+  --accent-light:  #0f2e22;
+  --danger-light:  #2c1414;
+  --warning-light: #2a1f0a;
+  --info-light:    #0d1f30;
+
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+/* Cards */
+body.dark-mode .card,
+body.dark-mode .modal,
+body.dark-mode .del-box,
+body.dark-mode .stat-card,
+body.dark-mode .quick-card,
+body.dark-mode .kpi-card,
+body.dark-mode .ngo-card,
+body.dark-mode .notify-panel,
+body.dark-mode .meal-slot,
+body.dark-mode .headcount-box,
+body.dark-mode .insight-card {
+  background: var(--card-bg);
+  border-color: var(--border);
+}
+
+/* Topbar */
+body.dark-mode .topbar {
+  background: #142318;
+  border-color: var(--border);
+}
+
+/* Tables */
+body.dark-mode th { color: var(--text-muted); border-color: var(--border); }
+body.dark-mode td { color: var(--text-primary); border-color: #1e2e26; }
+body.dark-mode tbody tr:hover td { background: #1f3229; }
+
+/* Inputs */
+body.dark-mode .form-input,
+body.dark-mode .form-input2,
+body.dark-mode .form-select,
+body.dark-mode .search-input,
+body.dark-mode select {
+  background: #1a2820;
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+body.dark-mode .search-wrap {
+  background: #1a2820;
+  border-color: var(--border);
+}
+
+/* Buttons */
+body.dark-mode .btn-outline {
+  background: #1a2820;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+body.dark-mode .btn-outline:hover {
+  background: #1f3229;
+  color: var(--text-primary);
+}
+body.dark-mode .btn-cancel {
+  background: #1a2820;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+/* Sidebar stays dark (already is) */
+body.dark-mode .sidebar { background: var(--sidebar-bg); }
+
+/* Filter/date tabs */
+body.dark-mode .date-tab,
+body.dark-mode .filter-btn,
+body.dark-mode .ftab,
+body.dark-mode .ptab,
+body.dark-mode .tab {
+  background: #1a2820;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+/* Alert/info boxes */
+body.dark-mode .alert-box { background: #201a0a; border-color: #5a3800; }
+body.dark-mode .alert-title { color: #F5C97A; }
+body.dark-mode .alert-body { color: #C49038; }
+
+/* Badges */
+body.dark-mode .badge-green { background: #0f2e22; color: #5DCAA5; }
+body.dark-mode .badge-red   { background: #2c1414; color: #F09595; }
+body.dark-mode .badge-amber { background: #2a1f0a; color: #F5C97A; }
+body.dark-mode .badge-blue  { background: #0d1f30; color: #85B7EB; }
+
+/* Modals */
+body.dark-mode .modal-overlay { background: rgba(0,0,0,.6); }
+
+/* Page-bg elements */
+body.dark-mode .page-bg,
+body.dark-mode .content { background: var(--page-bg); }
+
+/* No animation mode */
+body.no-animations *,
+body.no-animations *::before,
+body.no-animations *::after {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Compact tables mode */
+body.compact-tables td { padding: 6px 12px !important; }
+body.compact-tables th { padding: 5px 12px !important; }

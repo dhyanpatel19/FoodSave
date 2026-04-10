@@ -1,0 +1,1097 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waste Food — FoodSave</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="db.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="mobile.css">
+<script src="settings-sync.js"></script>
+<script src="mobile.js" defer></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sidebar-bg: #0d2b22;
+    --accent: #1D9E75;
+    --accent-dark: #0F6E56;
+    --accent-light: #E1F5EE;
+    --page-bg: #f0f4f2;
+    --card-bg: #ffffff;
+    --border: #e5eae7;
+    --text-primary: #0d2b22;
+    --text-secondary: #6b7c74;
+    --text-muted: #9baaa2;
+    --danger: #E24B4A;
+    --danger-dark: #A32D2D;
+    --danger-light: #FCEBEB;
+    --warning: #BA7517;
+    --warning-light: #FAEEDA;
+    --info: #185FA5;
+    --info-light: #E6F1FB;
+    --font: 'Plus Jakarta Sans', sans-serif;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --sidebar-width: 230px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  body { font-family: var(--font); background: var(--page-bg); color: var(--text-primary); display: flex; min-height: 100vh; font-size: 14px; }
+
+  /* SIDEBAR */
+  .sidebar { width: var(--sidebar-width); min-width: var(--sidebar-width); background: var(--sidebar-bg); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .logo { display: flex; align-items: center; gap: 10px; padding: 22px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  .logo-icon { width: 34px; height: 34px; background: var(--accent); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo-icon svg { width: 18px; height: 18px; }
+  .logo-text { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -.2px; }
+  .nav { padding: 16px 0; flex: 1; }
+  .nav-section { font-size: 10px; color: rgba(255,255,255,.3); padding: 14px 20px 6px; text-transform: uppercase; letter-spacing: .1em; font-weight: 500; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; color: rgba(255,255,255,.55); cursor: pointer; transition: all .15s; border-left: 3px solid transparent; text-decoration: none; }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .nav-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.9); }
+  .nav-item.active { background: rgba(226,75,74,.15); color: #F09595; border-left: 3px solid var(--danger); font-weight: 500; }
+  .sidebar-bottom { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08); }
+  .user-row { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0; }
+  .user-name { font-size: 12px; font-weight: 600; color: #fff; }
+  .user-role { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 1px; }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  /* TOPBAR */
+  .topbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 0 28px; height: 62px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 10; }
+  .topbar-title { flex: 1; }
+  .topbar-title h1 { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+  .topbar-title p { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+
+  .btn-primary { display: flex; align-items: center; gap: 6px; background: var(--danger); color: #fff; border: none; border-radius: var(--radius-sm); padding: 8px 16px; font-size: 13px; font-weight: 500; font-family: var(--font); cursor: pointer; transition: background .15s; }
+  .btn-primary:hover { background: var(--danger-dark); }
+  .btn-primary svg { width: 14px; height: 14px; }
+
+  .btn-outline { display: flex; align-items: center; gap: 6px; background: var(--card-bg); color: var(--text-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; font-family: var(--font); cursor: pointer; transition: all .15s; }
+  .btn-outline:hover { background: var(--page-bg); color: var(--text-primary); }
+  .btn-outline svg { width: 14px; height: 14px; }
+
+  /* CONTENT */
+  .content { flex: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* ALERT BANNER */
+  .alert-banner { background: #fff5f5; border: 1px solid #F09595; border-radius: var(--radius-lg); padding: 16px 20px; display: flex; align-items: center; gap: 14px; }
+  .alert-banner-icon { width: 40px; height: 40px; background: var(--danger-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .alert-banner-icon svg { width: 20px; height: 20px; }
+  .alert-banner-text { flex: 1; }
+  .alert-banner-title { font-size: 13px; font-weight: 600; color: var(--danger-dark); }
+  .alert-banner-desc { font-size: 12px; color: #791F1F; margin-top: 2px; }
+  .btn-donate-now { background: var(--danger); color: #fff; border: none; border-radius: var(--radius-sm); padding: 8px 16px; font-size: 12px; font-weight: 600; font-family: var(--font); cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+  .btn-donate-now:hover { background: var(--danger-dark); }
+
+  /* STATS */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .stat-card { background: var(--card-bg); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .stat-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em; }
+  .stat-value { font-size: 24px; font-weight: 600; color: var(--text-primary); line-height: 1; }
+  .stat-change { display: flex; align-items: center; gap: 4px; font-size: 11px; margin-top: 5px; }
+  .stat-change svg { width: 11px; height: 11px; }
+  .change-up { color: var(--accent-dark); }
+  .change-down { color: var(--danger); }
+  .stat-icon { width: 48px; height: 48px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .stat-icon svg { width: 22px; height: 22px; }
+  .ic-green { background: var(--accent-light); }
+  .ic-amber { background: var(--warning-light); }
+  .ic-blue { background: var(--info-light); }
+  .ic-red { background: var(--danger-light); }
+
+  /* MAIN GRID */
+  .main-grid { display: grid; grid-template-columns: 1fr 300px; gap: 18px; }
+
+  /* CARD */
+  .card { background: var(--card-bg); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 20px 22px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+  .card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* FILTER BAR */
+  .filter-bar { background: var(--card-bg); border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .filter-tabs { display: flex; gap: 5px; }
+  .ftab { padding: 5px 13px; border-radius: 20px; font-size: 12px; font-family: var(--font); cursor: pointer; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-secondary); transition: all .15s; }
+  .ftab.active { background: var(--sidebar-bg); color: #fff; border-color: var(--sidebar-bg); font-weight: 500; }
+  .ftab:not(.active):hover { background: var(--page-bg); }
+  .filter-divider { width: 1px; height: 24px; background: var(--border); }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 12px; font-size: 13px; color: var(--text-primary); border-bottom: 1px solid #f5f7f6; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #fafcfb; }
+
+  /* BADGE */
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-red { background: var(--danger-light); color: var(--danger-dark); }
+  .badge-amber { background: var(--warning-light); color: #854F0B; }
+  .badge-blue { background: var(--info-light); color: #0C447C; }
+  .badge-gray { background: #F1EFE8; color: #5F5E5A; }
+  .badge-green { background: var(--accent-light); color: var(--accent-dark); }
+
+  /* SEVERITY DOT */
+  .sev-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+  /* REASON TAG */
+  .reason-tag { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+  .reason-leftover { background: #FAEEDA; color: #854F0B; }
+  .reason-expired { background: var(--danger-light); color: var(--danger-dark); }
+  .reason-spill { background: var(--info-light); color: #0C447C; }
+  .reason-over { background: #EAF3DE; color: #3B6D11; }
+
+  /* FOOD ICON */
+  .food-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+
+  /* ACTION LINK */
+  .action-link { color: var(--accent); font-size: 12px; font-weight: 500; cursor: pointer; background: none; border: none; font-family: var(--font); padding: 0; text-decoration: none; }
+  .action-link:hover { text-decoration: underline; }
+  .action-link.del { color: var(--danger); }
+
+  /* RIGHT PANEL */
+  .right-panel { display: flex; flex-direction: column; gap: 16px; }
+
+  /* CATEGORY BARS */
+  .cat-list { display: flex; flex-direction: column; gap: 12px; }
+  .cat-row { display: flex; align-items: center; gap: 10px; }
+  .cat-emoji { font-size: 15px; width: 22px; text-align: center; flex-shrink: 0; }
+  .cat-name { font-size: 12px; color: var(--text-secondary); width: 80px; flex-shrink: 0; }
+  .cat-bar-bg { flex: 1; height: 8px; background: var(--page-bg); border-radius: 4px; overflow: hidden; }
+  .cat-bar-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
+  .cat-kg { font-size: 12px; font-weight: 600; color: var(--text-primary); width: 40px; text-align: right; flex-shrink: 0; }
+
+  /* REASON LIST */
+  .reason-list { display: flex; flex-direction: column; gap: 10px; }
+  .reason-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: var(--radius-md); background: var(--page-bg); }
+  .reason-left { display: flex; align-items: center; gap: 8px; }
+  .reason-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .reason-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+  .reason-pct { font-size: 11px; color: var(--text-muted); }
+  .reason-val { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+  /* TIPS BOX */
+  .tip-box { background: var(--accent-light); border: 1px solid #9FE1CB; border-radius: var(--radius-md); padding: 14px; }
+  .tip-title { font-size: 12px; font-weight: 600; color: var(--accent-dark); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .tip-title svg { width: 14px; height: 14px; }
+  .tip-item { font-size: 12px; color: #085041; padding: 4px 0; display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; }
+  .tip-item::before { content: '→'; color: var(--accent); flex-shrink: 0; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: var(--radius-lg); padding: 28px; width: 480px; max-width: 95vw; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; color: var(--text-primary); }
+  .modal-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+  .form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group2 { margin-bottom: 12px; }
+  .form-label2 { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; display: block; }
+  .form-input2 { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font); color: var(--text-primary); outline: none; transition: border .15s; background: #fff; }
+  .form-input2:focus { border-color: var(--danger); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
+  .btn-cancel { padding: 9px 18px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; font-size: 13px; font-family: var(--font); cursor: pointer; color: var(--text-secondary); }
+  .btn-save { padding: 9px 20px; border: none; border-radius: var(--radius-sm); background: var(--danger); color: #fff; font-size: 13px; font-family: var(--font); font-weight: 500; cursor: pointer; }
+  .btn-save:hover { background: var(--danger-dark); }
+
+  /* SEVERITY SELECTOR */
+  .sev-group { display: flex; gap: 8px; }
+  .sev-btn { flex: 1; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); font-size: 12px; font-family: var(--font); cursor: pointer; text-align: center; background: #fff; color: var(--text-secondary); transition: all .15s; }
+  .sev-btn.sel-low { background: var(--accent-light); border-color: var(--accent); color: var(--accent-dark); font-weight: 600; }
+  .sev-btn.sel-med { background: var(--warning-light); border-color: var(--warning); color: var(--warning); font-weight: 600; }
+  .sev-btn.sel-high { background: var(--danger-light); border-color: var(--danger); color: var(--danger-dark); font-weight: 600; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #c8d4cf; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="mainSidebar">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+        <path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/>
+        <circle cx="12" cy="9" r="2.5" fill="#fff" stroke="none"/>
+      </svg>
+    </div>
+    <span class="logo-text">FoodSave</span>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Main Menu</div>
+    <a href="dashboard.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </a>
+    <a href="prepared.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a7 7 0 017 7H5a7 7 0 017-7z"/><rect x="3" y="9" width="18" height="3" rx="1"/><path d="M8 12v8M16 12v8M5 20h14"/></svg>
+      Prepared Food
+    </a>
+    <a href="consumed.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Consumed Food
+    </a>
+    <a href="waste.html" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      Waste Food
+    </a>
+    <div class="nav-section">Actions</div>
+    <a href="donations.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      Donations
+    </a>
+    <a href="reports.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      Reports
+    </a>
+    <a href="settings.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Settings
+    </a>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="user-row">
+      <div class="avatar">RC</div>
+      <div>
+        <div class="user-name">Rahul Chauhan</div>
+        <div class="user-role">Canteen Manager</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="topbar-title">
+      <h1>Waste Food</h1>
+      <p>Track, analyse and reduce food waste in the college canteen</p>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-outline" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+      <button class="btn-primary" onclick="openModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Log Waste Entry
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ALERT BANNER — shown when today's waste > threshold -->
+    <div class="alert-banner" id="alertBanner">
+      <div class="alert-banner-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#E24B4A" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="alert-banner-text">
+        <div class="alert-banner-title">Surplus detector — checking waste level…</div>
+        <div class="alert-banner-desc" id="alertBannerDesc">Calculating today's waste data…</div>
+      </div>
+      <a href="donations.html" class="btn-donate-now">Donate surplus →</a>
+      <button onclick="document.getElementById('alertBanner').style.display='none'" style="background:none;border:none;cursor:pointer;color:#A32D2D;font-size:18px;line-height:1;padding:0 0 0 8px">&times;</button>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">Today's waste</div>
+          <div class="stat-value" style="color:var(--danger)" id="statWasteToday">—</div>
+          <div class="stat-change change-down">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            +4 kg vs yesterday
+          </div>
+        </div>
+        <div class="stat-icon ic-red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#E24B4A" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">This month total</div>
+          <div class="stat-value" id="statMonthTotal">—</div>
+          <div class="stat-change change-up" id="statMonthSub">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            Loading…
+          </div>
+        </div>
+        <div class="stat-icon ic-amber">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#BA7517" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">Waste rate today</div>
+          <div class="stat-value" id="statWasteRate">—</div>
+          <div class="stat-change" style="color:var(--text-muted)">
+            Target: below 8%
+          </div>
+        </div>
+        <div class="stat-icon" style="background:#FFF0F0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#E24B4A" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div>
+          <div class="stat-label">Recoverable surplus</div>
+          <div class="stat-value" style="color:var(--accent)" id="statRecoverable">—</div>
+          <div class="stat-change change-up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            Can be donated now
+          </div>
+        </div>
+        <div class="stat-icon ic-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="main-grid">
+
+      <!-- LEFT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+
+        <!-- FILTER BAR -->
+        <div class="filter-bar">
+          <div class="filter-tabs" id="periodTabs">
+            <button class="ftab active" onclick="setPeriod(this,'today')">Today</button>
+            <button class="ftab" onclick="setPeriod(this,'week')">This week</button>
+            <button class="ftab" onclick="setPeriod(this,'month')">This month</button>
+          </div>
+          <div class="filter-divider"></div>
+          <select id="reasonFilter" onchange="applyFilters()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:var(--font);color:var(--text-secondary);outline:none;background:#fff">
+            <option value="all">All reasons</option>
+            <option value="Leftover">Leftover</option>
+            <option value="Expired">Expired</option>
+            <option value="Spillage">Spillage</option>
+            <option value="Over-prepared">Over-prepared</option>
+          </select>
+          <select id="sevFilter" onchange="applyFilters()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:var(--font);color:var(--text-secondary);outline:none;background:#fff">
+            <option value="all">All severity</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+          <span style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="entryCount">6 entries</span>
+        </div>
+
+        <!-- WASTE LOG TABLE -->
+        <div class="card" style="padding:0 0 4px">
+          <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div class="card-title">Waste log</div>
+              <div class="card-sub">June 9, 2025 — all waste entries</div>
+            </div>
+            <span style="font-size:12px;color:var(--danger);font-weight:600" id="tableTotal">Loading…</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th style="padding-left:22px">Food item</th>
+                <th>Reason</th>
+                <th>Meal time</th>
+                <th>Wasted qty</th>
+                <th>Severity</th>
+                <th>Recoverable</th>
+                <th>Time logged</th>
+                <th style="padding-right:22px"></th>
+              </tr>
+            </thead>
+            <tbody id="wasteTable">
+              <tr><td colspan="8" style="text-align:center;padding:28px;color:#9baaa2">Loading waste entries…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- WEEKLY TREND CHART -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">7-day waste trend</div>
+              <div class="card-sub">Daily kg wasted — target line at 10 kg</div>
+            </div>
+          </div>
+          <div style="position:relative;width:100%;height:180px">
+            <canvas id="trendChart" role="img" aria-label="Line chart showing daily food waste over 7 days with a target line at 10 kg">Daily waste trend data.</canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="right-panel">
+
+        <!-- WASTE BY CATEGORY -->
+        <div class="card">
+          <div class="card-header" style="margin-bottom:14px">
+            <div class="card-title">Waste by category</div>
+            <span style="font-size:12px;color:var(--text-muted)">Today</span>
+          </div>
+          <div class="cat-list" id="catList"></div>
+        </div>
+
+        <!-- WASTE BY REASON -->
+        <div class="card">
+          <div class="card-header" style="margin-bottom:14px">
+            <div class="card-title">Waste reasons</div>
+          </div>
+          <div class="reason-list" id="reasonList"></div>
+        </div>
+
+        <!-- WASTE DONUT -->
+        <div class="card">
+          <div class="card-header" style="margin-bottom:10px">
+            <div class="card-title">Waste vs prepared</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="position:relative;width:100px;height:100px;flex-shrink:0">
+              <canvas id="donutChart" role="img" aria-label="Donut chart: 9.5% wasted vs 90.5% used">9.5% food wasted today.</canvas>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div>
+                <div style="font-size:22px;font-weight:600;color:var(--danger)" id="wasteRateValue">—</div>
+                <div style="font-size:12px;color:var(--text-secondary)">Waste rate today</div>
+              </div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.5">Target: below <strong style="color:var(--text-primary)">8%</strong><br>Last month avg: <strong style="color:var(--text-primary)">11.2%</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WASTE REDUCTION TIPS -->
+        <div class="tip-box">
+          <div class="tip-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Waste reduction tips
+          </div>
+          <div class="tip-item">Reduce Poha batch by 20% — consistently wasted at breakfast</div>
+          <div class="tip-item">Set expiry reminders for dairy items every evening</div>
+          <div class="tip-item">Estimate headcount before cooking dinner to avoid over-preparation</div>
+          <div class="tip-item">Partner with Seva Food Bank for same-day leftover pickup</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOG WASTE MODAL -->
+<div class="modal-overlay" id="wasteModal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title" id="wModalTitle">Log waste entry</div>
+    <div class="modal-sub" id="wModalSub">Record food that was discarded or could not be served</div>
+
+    <div class="form-row2">
+      <div class="form-group2">
+        <label class="form-label2">Food item name *</label>
+        <select class="form-input2" id="wPrepSelect" onchange="onPrepSelectW(this)" style="margin-bottom:6px">
+          <option value="">— Select from today's prepared —</option>
+        </select>
+        <input class="form-input2" id="wFoodName" placeholder="Or type food item name">
+        <div class="field-error wfe" id="wErrName">Food name is required.</div>
+      </div>
+      <div class="form-group2">
+        <label class="form-label2">Category</label>
+        <select class="form-input2" id="wCategory">
+          <option>Grains & Rice</option>
+          <option>Dal & Pulses</option>
+          <option>Vegetables</option>
+          <option>Bread & Roti</option>
+          <option>Dairy</option>
+          <option>Drinks</option>
+          <option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row2">
+      <div class="form-group2">
+        <label class="form-label2">Quantity wasted (kg) *</label>
+        <input class="form-input2" id="wQty" type="number" placeholder="0" min="0" step="0.5">
+        <div class="field-error wfe" id="wErrQty">Enter a valid quantity.</div>
+      </div>
+      <div class="form-group2">
+        <label class="form-label2">Meal time</label>
+        <select class="form-input2" id="wMeal">
+          <option>Breakfast</option>
+          <option>Lunch</option>
+          <option>Dinner</option>
+          <option>Snacks</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group2">
+      <label class="form-label2">Reason for waste *</label>
+      <select class="form-input2" id="wReason">
+        <option value="Leftover">Leftover — food not consumed</option>
+        <option value="Expired">Expired — past expiry date</option>
+        <option value="Spillage">Spillage — accidental spill</option>
+        <option value="Over-prepared">Over-prepared — too much cooked</option>
+        <option value="Contaminated">Contaminated — unsafe to eat</option>
+      </select>
+    </div>
+
+    <div class="form-group2">
+      <label class="form-label2">Severity level</label>
+      <div class="sev-group">
+        <button class="sev-btn" id="sLow" onclick="setSev('Low')">Low</button>
+        <button class="sev-btn sel-med" id="sMed" onclick="setSev('Medium')">Medium</button>
+        <button class="sev-btn" id="sHigh" onclick="setSev('High')">High</button>
+      </div>
+    </div>
+
+    <div class="form-row2">
+      <div class="form-group2">
+        <label class="form-label2">Recoverable qty (kg)</label>
+        <input class="form-input2" id="wRecoverable" type="number" placeholder="0" min="0" step="0.5">
+      </div>
+      <div class="form-group2">
+        <label class="form-label2">Time of waste</label>
+        <input class="form-input2" type="time" id="wTime" value="12:00">
+      </div>
+    </div>
+
+    <div class="form-group2">
+      <label class="form-label2">Notes</label>
+      <input class="form-input2" id="wNotes" placeholder="Additional details or observations...">
+    </div>
+
+    <div class="form-group2" style="display:none">
+      <input class="form-input2" type="date" id="wDate">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" id="wSaveBtn" onclick="saveWaste()">Log waste entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM DIALOG -->
+<div class="del-dialog" id="wDelDialog">
+  <div class="del-box">
+    <div class="del-icon-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </div>
+    <div class="del-title">Delete waste entry?</div>
+    <div class="del-sub" id="wDelName">This entry will be permanently removed.</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn-cancel" onclick="closeDelete()">Cancel</button>
+      <button class="btn-del-confirm" onclick="confirmDelete()">Yes, delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="wToast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="wToastMsg"></span>
+</div>
+
+<style>
+  .toast{position:fixed;bottom:24px;right:24px;background:#0d2b22;color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(70px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast svg{width:16px;height:16px;flex-shrink:0}
+  .action-link{cursor:pointer;background:none;border:none;font-family:var(--font);padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500;transition:background .15s}
+  .action-link.edit{color:var(--accent)}.action-link.edit:hover{background:var(--accent-light)}
+  .action-link.del{color:var(--danger)}.action-link.del:hover{background:var(--danger-light)}
+  /* MODAL upgrade */
+  .modal-overlay{animation:none}.modal-overlay.open{display:flex;animation:fadein .2s}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  .modal{animation:slideup .22s ease;max-height:92vh;overflow-y:auto;padding:0}
+  @keyframes slideup{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal-head{padding:22px 26px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
+  .modal-body{padding:20px 26px}
+  .modal-foot{padding:14px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+  .modal-close{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;border-radius:6px}
+  .modal-close:hover{background:var(--page-bg)}
+  .modal-close svg{width:18px;height:18px;display:block}
+  .field-error{font-size:11px;color:var(--danger);display:none;margin-top:3px}
+  .field-error.show{display:block}
+  .form-input2.error{border-color:var(--danger)}
+  /* delete confirm */
+  .del-dialog{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+  .del-dialog.open{display:flex}
+  .del-box{background:#fff;border-radius:14px;padding:28px;width:360px;max-width:95vw;text-align:center}
+  .del-icon-wrap{width:48px;height:48px;background:var(--danger-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+  .del-icon-wrap svg{width:22px;height:22px;color:var(--danger)}
+  .del-title{font-size:15px;font-weight:600;margin-bottom:6px}
+  .del-sub{font-size:13px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5}
+  .btn-del-confirm{padding:9px 22px;background:var(--danger);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer}
+  .empty-state{text-align:center;padding:38px 20px;color:var(--text-muted)}
+  .empty-state svg{width:38px;height:38px;opacity:.4;margin-bottom:10px}
+</style>
+<script>
+  /* ── STATE ── */
+  let currentSev = 'Medium';
+  let currentPeriod = 'today';
+  let pendingDeleteId = null;
+  let editingId = null;
+  let trendChart, donutChart2;
+
+  const CAT_EMOJI = {Grains:'🍚',Dal:'🫘',Vegetables:'🥬',Bread:'🫓',Dairy:'🥛',Drinks:'🍵',Other:'🗑'};
+  const CAT_BG    = {Grains:'#E1F5EE',Dal:'#FAEEDA',Vegetables:'#EAF3DE',Bread:'#F1EFE8',Dairy:'#FCEBEB',Drinks:'#E6F1FB',Other:'#f0f4f2'};
+  const MEAL_ICON = {Breakfast:'🌅',Lunch:'☀️',Dinner:'🌙',Snacks:'🍪'};
+  const REASON_CLS= {Leftover:'reason-leftover',Expired:'reason-expired',Spillage:'reason-spill','Over-prepared':'reason-over',Contaminated:'reason-expired'};
+  const SEV_COLOR = {Low:'#B4B2A9',Medium:'#EF9F27',High:'#E24B4A'};
+  const SEV_TEXT  = {Low:'#5F5E5A',Medium:'#854F0B',High:'#A32D2D'};
+
+  /* ── HELPERS ── */
+  function today(){ return new Date().toISOString().slice(0,10); }
+
+  function showToast(msg,err=false){
+    const t=document.getElementById('wToast');
+    document.getElementById('wToastMsg').textContent=msg;
+    t.querySelector('svg').style.color=err?'#E24B4A':'#1D9E75';
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer=setTimeout(()=>t.classList.remove('show'),3200);
+  }
+
+  function getFiltered(){
+    const all = FoodDB.waste.getAll();
+    const reasonF = document.getElementById('reasonFilter').value;
+    const sevF    = document.getElementById('sevFilter').value;
+    const td = today();
+    let rows = all;
+    if(currentPeriod==='today') rows=all.filter(r=>r.date===td);
+    else if(currentPeriod==='week'){const wk=new Date();wk.setDate(wk.getDate()-7);rows=all.filter(r=>r.date>=wk.toISOString().slice(0,10));}
+    else if(currentPeriod==='month'){const m=new Date();m.setDate(m.getDate()-30);rows=all.filter(r=>r.date>=m.toISOString().slice(0,10));}
+    if(reasonF&&reasonF!=='all') rows=rows.filter(r=>r.reason===reasonF);
+    if(sevF&&sevF!=='all')       rows=rows.filter(r=>r.severity===sevF);
+    return rows;
+  }
+
+    /* -- RENDER TABLE -- */
+  function renderTable(){
+    const rows = getFiltered();
+    const tbody = document.getElementById('wasteTable');
+    const td = today();
+
+    /* -- SURPLUS PENDING ROWS (prepared items with unlocked surplus for Today) -- */
+    let pendingHtml = '';
+    if(currentPeriod === 'today'){
+      const allPrep  = FoodDB.prepared.getAll().filter(r => r.date === td);
+      const allCons  = FoodDB.consumed.getAll().filter(r => r.date === td);
+      const allWaste = FoodDB.waste.getAll().filter(r => r.date === td);
+
+      allPrep.forEach(p => {
+        const prepKg  = parseFloat(p.qty || 0);
+        const consKg  = allCons.filter(c => c.name.toLowerCase()===p.name.toLowerCase() && c.meal===p.meal && c.date===td)
+                               .reduce((s,c) => s+parseFloat(c.consumedKg||0), 0);
+        const wasteKg = allWaste.filter(w => (w.item||'').toLowerCase()===p.name.toLowerCase() && w.session===p.meal && w.date===td)
+                                .reduce((s,w) => s+parseFloat(w.kg||0), 0);
+        const surplus = prepKg - consKg - wasteKg;
+        if(surplus > 0.1){
+          const qName = p.name.replace(/"/g,'&quot;');
+          const qMeal = (p.meal||'').replace(/"/g,'&quot;');
+          pendingHtml +=
+            '<tr class="surplus-pending-row" style="background:#fff8f0">'
+            +'<td style="padding-left:22px"><div style="display:flex;align-items:center;gap:10px">'
+            +'<div class="food-icon" style="background:#FAEEDA">&#127834;</div>'
+            +'<div><div style="font-weight:500;font-size:13px">'+p.name+'</div>'
+            +'<div style="font-size:11px;color:var(--text-muted)">'+(p.meal||'')+' &mdash; surplus not yet logged</div></div>'
+            +'</div></td>'
+            +'<td><span style="background:#FAEEDA;color:#854F0B;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">Surplus</span></td>'
+            +'<td style="font-size:12px;color:var(--text-secondary)">'+(p.meal||'')+'</td>'
+            +'<td style="font-weight:600;color:var(--warning)">'+surplus.toFixed(1)+' kg</td>'
+            +'<td><span style="font-size:11px;color:var(--warning);font-weight:600">&#9203; Pending</span></td>'
+            +'<td>&mdash;</td>'
+            +'<td style="font-size:12px;color:var(--text-muted)">'+td+'</td>'
+            +'<td style="padding-right:22px">'
+            +'<button class="action-link log-waste-btn" style="color:var(--danger);font-weight:600"'
+            +' data-name="'+qName+'" data-meal="'+qMeal+'" data-kg="'+surplus.toFixed(1)+'" data-date="'+td+'">Log waste &rarr;</button>'
+            +'</td></tr>';
+        }
+      });
+    }
+
+    if(!rows.length && !pendingHtml){
+      tbody.innerHTML=`<tr><td colspan="8" style="padding:0"><div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        <p>No waste entries found.<br>Click <strong>Log Waste Entry</strong> to add one.</p>
+      </div></td></tr>`;
+      updateStats([]);
+      renderCatBreakdown([]);
+      renderReasonBreakdown([]);
+      updateDonut([]);
+      document.getElementById('entryCount').textContent='0 entries';
+      return;
+    }
+
+    document.getElementById('entryCount').textContent=rows.length+' '+(rows.length===1?'entry':'entries');
+    tbody.innerHTML=pendingHtml+rows.map(r=>{
+      const icon=CAT_EMOJI[r.category]||'&#128465;';
+      const bg  =CAT_BG[r.category]||'#f0f4f2';
+      const mi  =MEAL_ICON[r.session]||'';
+      const qtyColor=parseFloat(r.kg)>=5?'var(--danger)':'var(--warning)';
+      const recBadge=parseFloat(r.recoverable||0)>0
+        ?'<span class="badge badge-green">'+r.recoverable+' kg &#10003;</span>'
+        :'<span class="badge badge-gray">None</span>';
+      return '<tr data-id="'+r.id+'" data-reason="'+r.reason+'" data-sev="'+r.severity+'">'
+        +'<td style="padding-left:22px"><div style="display:flex;align-items:center;gap:10px">'
+        +'<div class="food-icon" style="background:'+bg+'">'+icon+'</div>'
+        +'<div><div style="font-weight:500;font-size:13px">'+r.item+'</div>'
+        +'<div style="font-size:11px;color:var(--text-muted)">'+r.category+'</div></div>'
+        +'</div></td>'
+        +'<td><span class="reason-tag '+(REASON_CLS[r.reason]||'reason-leftover')+'">'+r.reason+'</span></td>'
+        +'<td style="font-size:12px;color:var(--text-secondary)">'+mi+' '+r.session+'</td>'
+        +'<td style="font-weight:600;color:'+qtyColor+'">'+r.kg+' kg</td>'
+        +'<td><span style="display:inline-flex;align-items:center;font-size:12px;font-weight:500;color:'+(SEV_TEXT[r.severity]||'#5F5E5A')+'">'
+        +'<span class="sev-dot" style="background:'+(SEV_COLOR[r.severity]||'#B4B2A9')+'"></span>'+(r.severity||'Low')
+        +'</span></td>'
+        +'<td>'+recBadge+'</td>'
+        +'<td style="font-size:12px;color:var(--text-muted)">'+r.date+'</td>'
+        +'<td style="padding-right:22px"><div style="display:inline-flex;gap:4px">'
+        +'<button class="action-link edit" onclick="openEdit(\''+r.id+'\')">&#9999;&#65039; Edit</button>'
+        +'<button class="action-link del" onclick="openDelete(\''+r.id+'\',\''+r.item+'\')">&#128465; Delete</button>'
+        +'</div></td>'
+        +'</tr>';
+    }).join('');
+    updateStats(rows);
+    renderCatBreakdown(rows);
+    renderReasonBreakdown(rows);
+    updateDonut(rows);
+  }
+
+  /* -- PRE-FILL WASTE MODAL FROM PREPARED SURPLUS -- */
+  function openWasteModalForItem(name, meal, surplusKg, date){
+    editingId = null;
+    document.getElementById('wModalTitle').textContent = 'Log waste entry';
+    document.getElementById('wModalSub').textContent   = 'Logging surplus for "' + name + '"';
+    document.getElementById('wSaveBtn').textContent    = 'Log waste entry';
+    document.getElementById('wFoodName').value   = name;
+    document.getElementById('wQty').value        = surplusKg;
+    document.getElementById('wMeal').value       = meal;
+    document.getElementById('wReason').value     = 'Leftover';
+    document.getElementById('wRecoverable').value= surplusKg;
+    document.getElementById('wTime').value       = new Date().toTimeString().slice(0,5);
+    document.getElementById('wDate').value       = date;
+    document.getElementById('wNotes').value      = '';
+    const sel = document.getElementById('wPrepSelect');
+    sel.innerHTML = '<option value="__manual__">&#9999;&#65039; From surplus: ' + name + '</option>';
+    sel.value = '__manual__';
+    setSev('Medium');
+    clearWErrors();
+    document.getElementById('wasteModal').classList.add('open');
+    setTimeout(function(){ document.getElementById('wQty').focus(); }, 80);
+  }
+
+
+
+  /* ── STATS ── */
+  function updateStats(rows){
+    const total = rows.reduce((s,r)=>s+parseFloat(r.kg||0),0);
+    const rec   = rows.reduce((s,r)=>s+parseFloat(r.recoverable||0),0);
+    const preparedToday = FoodDB.prepared.getAll().filter(r=>r.date===today()).reduce((s,r)=>s+parseFloat(r.qty||0),0);
+    const rate = preparedToday>0?((total/preparedToday)*100).toFixed(1):'—';
+    document.getElementById('statWasteToday').textContent = total.toFixed(1)+' kg';
+    document.getElementById('statWasteRate').textContent  = rate+'%';
+    document.getElementById('statRecoverable').textContent= rec.toFixed(1)+' kg';
+    document.getElementById('tableTotal').textContent     = `Total: ${total.toFixed(1)} kg wasted today`;
+    // alert banner
+    const banner=document.getElementById('alertBanner');
+    if(total>10){
+      banner.style.display='flex';
+      document.getElementById('alertBannerDesc').textContent=
+        `Today's waste (${total.toFixed(1)} kg) exceeds the daily limit of 10 kg. ${rec.toFixed(1)} kg can still be donated.`;
+    } else if(total>0){
+      banner.style.display='flex';
+      document.getElementById('alertBannerDesc').textContent=
+        `Today's waste: ${total.toFixed(1)} kg — within the 10 kg daily target. ${rec.toFixed(1)} kg recoverable.`;
+    } else {
+      banner.style.display='none';
+    }
+  }
+
+  /* ── CAT BREAKDOWN ── */
+  function renderCatBreakdown(rows){
+    const bycat={};
+    rows.forEach(r=>{bycat[r.category]=(bycat[r.category]||0)+parseFloat(r.kg||0);});
+    const total=Object.values(bycat).reduce((a,b)=>a+b,0)||1;
+    const sorted=Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
+    const barColor={Grains:'#E24B4A',Dal:'#EF9F27',Vegetables:'#EF9F27',Bread:'#B4B2A9',Dairy:'#E24B4A',Drinks:'#185FA5',Other:'#B4B2A9'};
+    const el = document.getElementById('catList');
+    if(!sorted.length){
+      el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px 0">No data for this period</div>';
+      return;
+    }
+    el.innerHTML=sorted.map(([cat,kg])=>`
+      <div class="cat-row">
+        <span class="cat-emoji">${CAT_EMOJI[cat]||'🗑'}</span>
+        <span class="cat-name">${cat}</span>
+        <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${Math.round(kg/total*100)}%;background:${barColor[cat]||'#E24B4A'}"></div></div>
+        <span class="cat-kg">${kg.toFixed(1)} kg</span>
+      </div>`).join('');
+  }
+
+  /* ── REASON BREAKDOWN ── */
+  function renderReasonBreakdown(rows){
+    const byReason={};
+    rows.forEach(r=>{byReason[r.reason]=(byReason[r.reason]||0)+parseFloat(r.kg||0);});
+    const total=Object.values(byReason).reduce((a,b)=>a+b,0)||1;
+    const sorted=Object.entries(byReason).sort((a,b)=>b[1]-a[1]);
+    const el=document.getElementById('reasonList');
+    if(!sorted.length){
+      el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px 0">No data for this period</div>';
+      return;
+    }
+    const REASON_META={
+      Leftover:    {icon:'🍽',bg:'#FAEEDA',col:'#854F0B'},
+      'Over-prepared':{icon:'📈',bg:'#EAF3DE',col:'#3B6D11'},
+      Expired:     {icon:'⏰',bg:'#FCEBEB',col:'#A32D2D'},
+      Spillage:    {icon:'💧',bg:'#E6F1FB',col:'#185FA5'},
+      Contaminated:{icon:'☣️',bg:'#FCEBEB',col:'#A32D2D'},
+    };
+    el.innerHTML=sorted.map(([reason,kg])=>{
+      const m=REASON_META[reason]||{icon:'🗑',bg:'#f0f4f2',col:'var(--text-secondary)'};
+      const pct=Math.round(kg/total*100);
+      return`<div class="reason-row">
+        <div class="reason-left">
+          <div class="reason-icon" style="background:${m.bg}">${m.icon}</div>
+          <div>
+            <div class="reason-name">${reason}</div>
+            <div class="reason-pct">${pct}% of waste</div>
+          </div>
+        </div>
+        <div class="reason-val" style="color:${m.col}">${kg.toFixed(1)} kg</div>
+      </div>`;
+    }).join('');
+  }
+
+  /* ── DONUT ── */
+  function updateDonut(rows){
+    const wasted=rows.reduce((s,r)=>s+parseFloat(r.kg||0),0);
+    const prep  =FoodDB.prepared.getAll().filter(r=>r.date===today()).reduce((s,r)=>s+parseFloat(r.qty||0),0);
+    const used  =Math.max(prep-wasted,0);
+    const rate  =prep>0?((wasted/prep)*100).toFixed(1):0;
+    document.getElementById('wasteRateValue').textContent=rate+'%';
+    if(donutChart2){donutChart2.data.datasets[0].data=[used,wasted];donutChart2.update('none');}
+  }
+
+  /* ── TREND CHART ── */
+  function buildTrendChart(){
+    const all=FoodDB.waste.getAll();
+    const labels=[],data=[];
+    for(let i=6;i>=0;i--){
+      const d=new Date();d.setDate(d.getDate()-i);
+      const ds=d.toISOString().slice(0,10);
+      labels.push(d.toLocaleDateString('en-IN',{weekday:'short'}));
+      data.push(all.filter(r=>r.date===ds).reduce((s,r)=>s+parseFloat(r.kg||0),0));
+    }
+    const ctx=document.getElementById('trendChart').getContext('2d');
+    trendChart=new Chart(ctx,{type:'line',data:{labels,datasets:[
+      {label:'Waste (kg)',data,borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,.08)',tension:.4,fill:true,borderWidth:2,pointRadius:4,pointBackgroundColor:'#E24B4A',pointBorderColor:'#fff',pointBorderWidth:1.5},
+      {label:'Target (10 kg)',data:Array(7).fill(10),borderColor:'#1D9E75',borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false,tension:0}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},
+      scales:{x:{grid:{display:false},ticks:{color:'#6b7c74',font:{size:11}}},y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{color:'#6b7c74',font:{size:11},callback:v=>v+' kg'},beginAtZero:true}}}});
+    const dCtx=document.getElementById('donutChart').getContext('2d');
+    donutChart2=new Chart(dCtx,{type:'doughnut',data:{labels:['Used','Wasted'],datasets:[{data:[90,10],backgroundColor:['#E1F5EE','#E24B4A'],borderWidth:0,hoverOffset:4}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false}}}});
+  }
+
+  /* ── PERIOD FILTER ── */
+  function setPeriod(el,p){
+    document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    currentPeriod=p;
+    renderTable();
+  }
+  function applyFilters(){ renderTable(); }
+
+  /* ── SEVERITY SELECTOR ── */
+  function setSev(level){
+    currentSev=level;
+    document.getElementById('sLow').className ='sev-btn'+(level==='Low'?' sel-low':'');
+    document.getElementById('sMed').className ='sev-btn'+(level==='Medium'?' sel-med':'');
+    document.getElementById('sHigh').className='sev-btn'+(level==='High'?' sel-high':'');
+  }
+
+  /* ── POPULATE PREPARED DROPDOWN (waste) ── */
+  function populatePreparedDropdownW(){
+    const sel=document.getElementById('wPrepSelect');
+    const items=FoodDB.prepared.getAll().filter(r=>r.date===today());
+    sel.innerHTML='<option value="">— Select from today\'s prepared —</option>';
+    if(items.length){
+      items.forEach(r=>{
+        const opt=document.createElement('option');
+        opt.value=r.id;
+        opt.textContent=`${r.name} — ${r.meal||''} (${r.qty} kg)`;
+        opt.dataset.name=r.name;
+        opt.dataset.meal=r.meal||'Breakfast';
+        opt.dataset.category=r.category||'Other';
+        sel.appendChild(opt);
+      });
+    }
+    const manual=document.createElement('option');
+    manual.value='__manual__';
+    manual.textContent='✏️ Type manually...';
+    sel.appendChild(manual);
+    sel.value='';
+  }
+
+  function onPrepSelectW(sel){
+    const opt=sel.options[sel.selectedIndex];
+    if(opt.value==='__manual__'){
+      document.getElementById('wFoodName').value='';
+      document.getElementById('wFoodName').focus();
+    } else if(opt.value){
+      document.getElementById('wFoodName').value=opt.dataset.name||'';
+      document.getElementById('wMeal').value=opt.dataset.meal||'Breakfast';
+      // map category to select option
+      const catMap={'Grains':'Grains & Rice','Dal':'Dal & Pulses','Bread':'Bread & Roti'};
+      const rawCat=opt.dataset.category||'';
+      const mappedCat=catMap[rawCat]||rawCat||'Other';
+      const catSel=document.getElementById('wCategory');
+      for(let i=0;i<catSel.options.length;i++){
+        if(catSel.options[i].text.startsWith(mappedCat.split('&')[0].trim())){
+          catSel.selectedIndex=i; break;
+        }
+      }
+      document.getElementById('wQty').focus();
+    }
+  }
+
+  /* ── OPEN ADD MODAL ── */
+  function openModal(){
+    editingId=null;
+    document.getElementById('wModalTitle').textContent='Log waste entry';
+    document.getElementById('wModalSub').textContent='Record food that was discarded or could not be served';
+    document.getElementById('wSaveBtn').textContent='Log waste entry';
+    ['wFoodName','wQty','wRecoverable','wNotes'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('wTime').value=new Date().toTimeString().slice(0,5);
+    document.getElementById('wDate').value=today();
+    setSev('Medium');
+    clearWErrors();
+    populatePreparedDropdownW();
+    document.getElementById('wasteModal').classList.add('open');
+    setTimeout(()=>document.getElementById('wPrepSelect').focus(),80);
+  }
+
+  /* ── OPEN EDIT MODAL ── */
+  function openEdit(id){
+    const r=FoodDB.waste.get(id);
+    if(!r){showToast('Record not found',true);return;}
+    editingId=id;
+    document.getElementById('wModalTitle').textContent='Edit waste entry';
+    document.getElementById('wModalSub').textContent='Updating "'+r.item+'"';
+    document.getElementById('wSaveBtn').textContent='Update entry';
+    // reset prepared dropdown to manual for edit
+    const sel=document.getElementById('wPrepSelect');
+    sel.innerHTML='<option value="__manual__">✏️ Manual entry (editing)</option>';
+    sel.value='__manual__';
+    document.getElementById('wFoodName').value=r.item||'';
+    document.getElementById('wCategory').value=r.category||'Grains';
+    document.getElementById('wQty').value=r.kg||'';
+    document.getElementById('wMeal').value=r.session||'Breakfast';
+    document.getElementById('wReason').value=r.reason||'Leftover';
+    document.getElementById('wRecoverable').value=r.recoverable||'';
+    document.getElementById('wTime').value=r.time||'12:00';
+    document.getElementById('wDate').value=r.date||today();
+    document.getElementById('wNotes').value=r.notes||'';
+    setSev(r.severity||'Medium');
+    clearWErrors();
+    document.getElementById('wasteModal').classList.add('open');
+  }
+
+  /* ── CLOSE MODAL ── */
+  function closeModal(){ document.getElementById('wasteModal').classList.remove('open'); }
+  function closeModalOutside(e){ if(e.target.id==='wasteModal') closeModal(); }
+  function clearWErrors(){ document.querySelectorAll('.wfe').forEach(e=>e.classList.remove('show')); document.querySelectorAll('#wasteModal .form-input2').forEach(e=>e.classList.remove('error')); }
+
+  /* ── SAVE ── */
+  function saveWaste(){
+    clearWErrors();
+    // prefer text input value (user may have typed or auto-filled)
+    const name=document.getElementById('wFoodName').value.trim();
+    const qty =parseFloat(document.getElementById('wQty').value);
+    const cat =document.getElementById('wCategory').value;
+    const meal=document.getElementById('wMeal').value;
+    const reason=document.getElementById('wReason').value;
+    const rec =parseFloat(document.getElementById('wRecoverable').value)||0;
+    const time=document.getElementById('wTime').value;
+    const date=document.getElementById('wDate').value||today();
+    const notes=document.getElementById('wNotes').value.trim();
+    let valid=true;
+    if(!name){document.getElementById('wErrName').classList.add('show');document.getElementById('wFoodName').classList.add('error');valid=false;}
+    if(!qty||qty<=0){document.getElementById('wErrQty').classList.add('show');document.getElementById('wQty').classList.add('error');valid=false;}
+    if(!valid) return;
+    const payload={item:name,category:cat,kg:qty,session:meal,reason,severity:currentSev,recoverable:rec,time,date,notes,action:'Logged'};
+    if(editingId){FoodDB.waste.update(editingId,payload);showToast('✏️ "'+name+'" updated');}
+    else{FoodDB.waste.add(payload);showToast('✅ Waste entry logged');}
+    closeModal();
+    renderTable();
+    if(trendChart){trendChart.destroy();buildTrendChart();}
+  }
+
+  /* ── DELETE ── */
+  function openDelete(id,name){
+    pendingDeleteId=id;
+    document.getElementById('wDelName').textContent='"'+name+'" will be permanently removed.';
+    document.getElementById('wDelDialog').classList.add('open');
+  }
+  function closeDelete(){pendingDeleteId=null;document.getElementById('wDelDialog').classList.remove('open');}
+  function confirmDelete(){
+    if(!pendingDeleteId) return;
+    const r=FoodDB.waste.get(pendingDeleteId);
+    FoodDB.waste.delete(pendingDeleteId);
+    closeDelete();renderTable();
+    showToast('🗑️ "'+(r?.item||'Item')+'" deleted');
+  }
+
+  /* ── EXPORT CSV ── */
+  function exportCSV(){
+    const rows=getFiltered();
+    const lines=[['Item','Category','Meal','Wasted(kg)','Severity','Recoverable','Reason','Date','Notes'].join(','),
+      ...rows.map(r=>[r.item,r.category,r.session,r.kg,r.severity,r.recoverable||0,r.reason,r.date,r.notes||''].map(c=>`"${c}"`).join(','))];
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(lines.join('\n'));
+    a.download='waste_log_'+today()+'.csv';a.click();
+    showToast('📥 CSV exported ('+rows.length+' rows)');
+  }
+
+  /* ── INIT ── */
+  function initWaste(){
+    // month total stat card
+    const allWaste = FoodDB.waste.getAll();
+    const monthStr = new Date().toISOString().slice(0,7);
+    const monthRows = allWaste.filter(r=>(r.date||'').startsWith(monthStr));
+    const monthKg = monthRows.reduce((s,r)=>s+parseFloat(r.kg||0),0);
+    document.getElementById('statMonthTotal').textContent = monthKg.toFixed(1)+' kg';
+    document.getElementById('statMonthSub').innerHTML =
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>${monthRows.length} entries this month`;
+    buildTrendChart();
+    renderTable();
+  }
+
+  /* Delegated click handler for dynamically generated Log waste buttons */
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('.log-waste-btn');
+    if(!btn) return;
+    const name    = btn.getAttribute('data-name');
+    const meal    = btn.getAttribute('data-meal');
+    const kg      = parseFloat(btn.getAttribute('data-kg'));
+    const date    = btn.getAttribute('data-date');
+    openWasteModalForItem(name, meal, kg, date);
+  });
+
+  document.addEventListener('DOMContentLoaded', initWaste);
+</script>
+</body>
+</html>
